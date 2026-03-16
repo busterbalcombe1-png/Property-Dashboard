@@ -1,4 +1,5 @@
-import { Link, useRoute } from "wouter";
+import { Link, useRoute, useLocation } from "wouter";
+import { useAuth } from "@/contexts/auth-context";
 import { 
   LayoutDashboard, 
   Building2, 
@@ -49,6 +50,14 @@ function NavLink({ item }: { item: typeof navItems[0] }) {
 }
 
 export function AppSidebar() {
+  const { logout, user } = useAuth();
+  const [, navigate] = useLocation();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
+
   return (
     <Sidebar variant="sidebar" collapsible="icon">
       <SidebarHeader className="flex h-16 items-center justify-center border-b border-sidebar-border/50 px-4 py-0">
@@ -83,7 +92,14 @@ export function AppSidebar() {
       <SidebarFooter className="border-t border-sidebar-border/50 p-4">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton className="text-sidebar-foreground/70 hover:text-sidebar-foreground">
+            <div className="group-data-[collapsible=icon]:hidden px-2 py-1 mb-1">
+              <p className="text-[10px] uppercase tracking-wider text-sidebar-foreground/40">Signed in as</p>
+              <p className="text-xs font-medium text-sidebar-foreground/70 capitalize">{user?.username}</p>
+            </div>
+            <SidebarMenuButton
+              className="text-sidebar-foreground/70 hover:text-sidebar-foreground"
+              onClick={handleLogout}
+            >
               <LogOut className="h-4 w-4" />
               <span>Log out</span>
             </SidebarMenuButton>
