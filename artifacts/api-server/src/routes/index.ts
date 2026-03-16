@@ -7,6 +7,7 @@ import refurbRouter from "./refurb";
 import statsRouter from "./stats";
 import valuationsRouter from "./valuations";
 import uploadRouter from "./upload";
+import rentRouter from "./rent";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(refurbRouter);
 router.use(statsRouter);
 router.use(valuationsRouter);
 router.use(uploadRouter);
+router.use(rentRouter);
 
 export default router;
