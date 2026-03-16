@@ -1,0 +1,17 @@
+packages:
+  "recharts": "Dashboard analytics charts and data visualization"
+  "papaparse": "CSV export functionality for data tables"
+  "date-fns": "Date formatting and manipulation"
+  "react-hook-form": "Form state management and validation"
+  "@hookform/resolvers": "Zod validation resolver for React Hook Form"
+  "zod": "Schema validation for forms"
+  "lucide-react": "Icons for the application"
+
+images:
+  - path: "artifacts/property-dashboard/public/images/logo.png"
+    description: "Minimal modern geometric building logo mark in deep navy blue on transparent background, clean vector style"
+    aspect_ratio: "1:1"
+
+notes:
+  - Using generated Orval hooks from @workspace/api-client-react
+  - Implementing full CRUD with cache invalidation for all entities
