@@ -61,7 +61,7 @@ router.get("/stats", async (_req, res) => {
 
     // Rent by property
     const rentByProperty = properties.map(p => ({
-      address: p.address.length > 30 ? p.address.substring(0, 30) + "..." : p.address,
+      address: p.address.split(",")[0].trim(),
       rent: parseFloat(p.monthlyRent),
     }));
 

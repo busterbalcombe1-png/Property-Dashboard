@@ -183,7 +183,7 @@ export default function Dashboard() {
           {/* Rent Distribution */}
           <Card className="border-border/50 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg">Rent Distribution</CardTitle>
+              <CardTitle className="text-lg">Rental Income</CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
