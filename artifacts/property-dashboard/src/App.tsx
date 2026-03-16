@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import Dashboard from "./pages/dashboard";
 import Properties from "./pages/properties";
+import PropertyDetail from "./pages/property-detail";
 import Tenants from "./pages/tenants";
 import Maintenance from "./pages/maintenance";
 import RefurbTracker from "./pages/refurb";
@@ -24,6 +25,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/properties" component={Properties} />
+      <Route path="/properties/:id" component={PropertyDetail} />
       <Route path="/tenants" component={Tenants} />
       <Route path="/maintenance" component={Maintenance} />
       <Route path="/refurb" component={RefurbTracker} />

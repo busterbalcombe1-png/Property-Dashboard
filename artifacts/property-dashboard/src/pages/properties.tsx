@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { format } from "date-fns";
-import { Plus, Download, Edit2, Trash2, Home } from "lucide-react";
+import { Plus, Download, Edit2, Trash2, Home, ChevronRight } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -94,6 +95,7 @@ function StatusBadge({ status }: { status: string }) {
 export default function Properties() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
   const { data: properties, isLoading } = useListProperties();
   
   const [searchTerm, setSearchTerm] = useState("");
@@ -387,8 +389,10 @@ export default function Properties() {
                   </TableRow>
                 ) : (
                   filteredData?.map((property) => (
-                    <TableRow key={property.id} className="hover:bg-muted/20">
-                      <TableCell className="font-medium">{property.address}</TableCell>
+                    <TableRow key={property.id} className="hover:bg-muted/20 cursor-pointer" onClick={() => navigate(`/properties/${property.id}`)}>
+                      <TableCell className="font-medium">
+                        <span className="flex items-center gap-1 group-hover:text-primary">{property.address}</span>
+                      </TableCell>
                       <TableCell className="text-muted-foreground">
                         {property.propertyType} • {property.bedrooms} beds
                       </TableCell>
@@ -405,12 +409,15 @@ export default function Properties() {
                         {formatCurrency(property.monthlyRent - property.monthlyMortgage - property.monthlyExpenses)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleOpenEdit(property)}>
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); handleOpenEdit(property); }}>
                             <Edit2 className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500/70 hover:text-rose-600 hover:bg-rose-500/10" onClick={() => setDeleteId(property.id)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500/70 hover:text-rose-600 hover:bg-rose-500/10" onClick={(e) => { e.stopPropagation(); setDeleteId(property.id); }}>
                             <Trash2 className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => navigate(`/properties/${property.id}`)}>
+                            <ChevronRight className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>

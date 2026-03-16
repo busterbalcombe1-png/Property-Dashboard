@@ -4,6 +4,20 @@
 
 pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
 
+## Features
+
+- **Property Portfolio Dashboard** (`artifacts/property-dashboard`) — React + Vite frontend at `/`
+- **5 pages**: Overview (charts + KPIs), Properties, Tenants, Maintenance, Refurb Tracker
+- **Property Detail page** (`/properties/:id`) — click any property row to open:
+  - Photo upload, all property details (EPC, council tax band, year built, bedrooms/bathrooms)
+  - Full financial breakdown (cashflow, yield, capital growth)
+  - Mortgage details (lender, rate, type, fix end date, outstanding balance)
+  - Valuation history with chart (add/delete valuations, track over time)
+  - Useful links (Rightmove, Zoopla, Land Registry)
+  - Key contacts (letting agent, solicitor, insurance provider)
+- **API**: Express server at `/api`, photo uploads at `/api/uploads/`
+- **Database**: PostgreSQL via Drizzle ORM
+
 ## Stack
 
 - **Monorepo tool**: pnpm workspaces
