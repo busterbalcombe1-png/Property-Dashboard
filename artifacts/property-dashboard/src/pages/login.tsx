@@ -138,9 +138,7 @@ export default function Login() {
           <div style={{ width: 64, height: 64, border: "2px solid #9d7c2e", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
             <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 600, color: "#9d7c2e", letterSpacing: 2, lineHeight: 1 }}>PD</span>
           </div>
-          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 600, color: "#1a2744", letterSpacing: "0.05em", lineHeight: 1.1, textAlign: "center" }}>
-            PropDash
-          </h1>
+          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 600, color: "#1a2744", letterSpacing: "0.05em", lineHeight: 1.1, textAlign: "center" }}>BlackRidge PropertyGroup</h1>
           <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 13, fontStyle: "italic", color: "#7a6a50", letterSpacing: "0.1em", marginTop: 4, textAlign: "center" }}>
             Private Portfolio Management
           </p>
