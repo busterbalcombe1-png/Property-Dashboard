@@ -6,6 +6,7 @@ import {
   Users, 
   Wrench, 
   Hammer,
+  PoundSterling,
   LogOut
 } from "lucide-react";
 import {
@@ -25,6 +26,7 @@ const navItems = [
   { title: "Overview", url: "/", icon: LayoutDashboard },
   { title: "Properties", url: "/properties", icon: Building2 },
   { title: "Tenants", url: "/tenants", icon: Users },
+  { title: "Rent Accounts", url: "/rent", icon: PoundSterling },
   { title: "Maintenance", url: "/maintenance", icon: Wrench },
   { title: "Refurb Tracker", url: "/refurb", icon: Hammer },
 ];
