@@ -265,63 +265,64 @@ export default function PropertyDetail() {
           )}
         </div>
 
-        {/* Photo hero */}
-        <div
-          className="relative w-full rounded-xl overflow-hidden border border-border/50"
-          style={{ background: "#0c1220" }}
-        >
-          {/* 4:3 aspect-ratio wrapper, capped so it doesn't tower on wide screens */}
-          <div
-            className="w-full flex items-center justify-center"
-            style={{ aspectRatio: "4/3", maxHeight: 460 }}
-          >
-            {p.photoUrl ? (
-              <>
-                {/* Blurred background fill to soften the letterbox edges */}
-                <img
-                  src={p.photoUrl}
-                  alt=""
-                  aria-hidden
-                  className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-20 pointer-events-none select-none"
-                />
-                <img
-                  src={p.photoUrl}
-                  alt={p.address}
-                  className="relative z-10 max-w-full max-h-full object-contain"
-                  style={{ maxHeight: 460 }}
-                />
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground w-full h-full">
-                <Camera className="h-16 w-16 opacity-15" />
-                <p className="text-sm opacity-60 tracking-wide">No photo — upload one below</p>
-              </div>
-            )}
-          </div>
-
-          {/* Upload button */}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="absolute bottom-3 right-3 z-20 flex items-center gap-2 bg-background/90 backdrop-blur-sm border border-border rounded-lg px-3 py-2 text-sm font-medium shadow-sm hover:bg-background transition-colors"
-          >
-            <Upload className="h-4 w-4" />
-            {uploading ? "Uploading…" : p.photoUrl ? "Change Photo" : "Upload Photo"}
-          </button>
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
-        </div>
-
-        {/* Address + status */}
-        <div className="flex flex-col sm:flex-row sm:items-start gap-3">
-          <div className="flex-1">
-            <h1 className="text-2xl md:text-3xl font-bold">{p.address}</h1>
-            <p className="text-muted-foreground text-sm mt-1">
+        {/* Address + thumbnail */}
+        <div className="flex items-start gap-5">
+          {/* Left: address info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 flex-wrap mb-1">
+              <h1 className="text-2xl md:text-3xl font-bold">{p.address}</h1>
+              <StatusBadge status={p.status} />
+            </div>
+            <p className="text-muted-foreground text-sm">
               {p.propertyType} · {p.bedrooms} bed{p.bathrooms ? ` · ${p.bathrooms} bath` : ""}
               {purchaseDate && ` · Purchased ${format(purchaseDate, "MMM yyyy")}`}
               {(yearsHeld > 0 || monthsHeld > 0) && ` (${yearsHeld > 0 ? `${yearsHeld}y ` : ""}${monthsHeld}m ago)`}
             </p>
           </div>
-          <StatusBadge status={p.status} />
+
+          {/* Right: small photo thumbnail */}
+          <div className="shrink-0 flex flex-col items-end gap-1.5">
+            <div
+              className="relative overflow-hidden rounded-lg cursor-pointer"
+              style={{ width: 200, aspectRatio: "4/3", background: "#0c1220" }}
+              onClick={() => fileInputRef.current?.click()}
+              title={uploading ? "Uploading…" : p.photoUrl ? "Change photo" : "Upload photo"}
+            >
+              {p.photoUrl ? (
+                <>
+                  <img
+                    src={p.photoUrl}
+                    alt=""
+                    aria-hidden
+                    className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-25 pointer-events-none select-none"
+                  />
+                  <img
+                    src={p.photoUrl}
+                    alt={p.address}
+                    className="relative z-10 w-full h-full object-contain"
+                  />
+                </>
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 text-muted-foreground/40">
+                  <Camera className="h-7 w-7" />
+                  <span className="text-[10px] tracking-wide">Add photo</span>
+                </div>
+              )}
+              {/* Hover overlay */}
+              <div className="absolute inset-0 z-20 bg-black/0 hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
+                <Upload className="h-5 w-5 text-white drop-shadow" />
+              </div>
+            </div>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+            >
+              <Upload className="h-3 w-3" />
+              {uploading ? "Uploading…" : p.photoUrl ? "Change photo" : "Upload photo"}
+            </button>
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+          </div>
         </div>
 
         {/* KPI row */}
