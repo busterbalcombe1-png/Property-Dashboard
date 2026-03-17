@@ -70,12 +70,11 @@ export function AppSidebar() {
             className="h-8 w-8 rounded-md bg-white p-1"
           />
           <div className="flex flex-col overflow-hidden group-data-[collapsible=icon]:hidden">
-            <span className="truncate font-display font-bold leading-none text-sidebar-foreground">PropDash</span>
+            <span className="truncate font-display font-bold leading-none text-sidebar-foreground">BlackRidge</span>
             <span className="truncate text-[10px] text-sidebar-foreground/60">Portfolio Manager</span>
           </div>
         </div>
       </SidebarHeader>
-      
       <SidebarContent className="pt-4">
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs uppercase tracking-wider text-sidebar-foreground/50">
@@ -90,7 +89,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      
       <SidebarFooter className="border-t border-sidebar-border/50 p-4">
         <SidebarMenu>
           <SidebarMenuItem>
