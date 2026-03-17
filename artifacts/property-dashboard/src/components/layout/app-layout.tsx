@@ -18,9 +18,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
             </div>
             <div className="flex items-center gap-4">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm shadow-sm ring-1 ring-primary/20">
-                JD
-              </div>
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm shadow-sm ring-1 ring-primary/20">BB</div>
             </div>
           </header>
           <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 lg:p-8 scroll-smooth">
