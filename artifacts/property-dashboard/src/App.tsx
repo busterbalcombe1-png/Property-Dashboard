@@ -9,6 +9,7 @@ import Dashboard from "./pages/dashboard";
 import Properties from "./pages/properties";
 import PropertyDetail from "./pages/property-detail";
 import Tenants from "./pages/tenants";
+import TenantDetail from "./pages/tenant-detail";
 import Maintenance from "./pages/maintenance";
 import RefurbTracker from "./pages/refurb";
 import RentTracking from "./pages/rent";
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/properties" component={Properties} />
       <Route path="/properties/:id" component={PropertyDetail} />
       <Route path="/tenants" component={Tenants} />
+      <Route path="/tenants/:id" component={TenantDetail} />
       <Route path="/maintenance" component={Maintenance} />
       <Route path="/refurb" component={RefurbTracker} />
       <Route path="/rent" component={RentTracking} />

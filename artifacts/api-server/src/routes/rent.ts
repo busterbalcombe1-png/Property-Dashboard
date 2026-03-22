@@ -11,11 +11,22 @@ const toStr = (v: unknown) => v != null && v !== "" ? String(v) : null;
 
 router.get("/rent/payments", async (req, res) => {
   try {
-    const { propertyId } = req.query;
+    const { propertyId, tenantId } = req.query;
     let rows;
-    if (propertyId) {
+    if (propertyId && tenantId) {
+      rows = await db.select().from(rentPaymentsTable)
+        .where(and(
+          eq(rentPaymentsTable.propertyId, parseInt(String(propertyId))),
+          eq(rentPaymentsTable.tenantId, parseInt(String(tenantId)))
+        ))
+        .orderBy(desc(rentPaymentsTable.dueDate));
+    } else if (propertyId) {
       rows = await db.select().from(rentPaymentsTable)
         .where(eq(rentPaymentsTable.propertyId, parseInt(String(propertyId))))
+        .orderBy(desc(rentPaymentsTable.dueDate));
+    } else if (tenantId) {
+      rows = await db.select().from(rentPaymentsTable)
+        .where(eq(rentPaymentsTable.tenantId, parseInt(String(tenantId))))
         .orderBy(desc(rentPaymentsTable.dueDate));
     } else {
       rows = await db.select().from(rentPaymentsTable).orderBy(desc(rentPaymentsTable.dueDate));

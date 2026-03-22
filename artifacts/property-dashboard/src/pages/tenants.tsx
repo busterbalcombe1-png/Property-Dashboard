@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { Plus, Download, Edit2, Trash2, Users } from "lucide-react";
+import { Plus, Download, Edit2, Trash2, Users, ChevronRight } from "lucide-react";
+import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -70,6 +71,7 @@ function StatusBadge({ status }: { status: string }) {
 export default function Tenants() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
   const { data: tenants, isLoading } = useListTenants();
   const { data: properties } = useListProperties();
   
@@ -341,8 +343,17 @@ export default function Tenants() {
                   </TableRow>
                 ) : (
                   filteredData?.map((tenant) => (
-                    <TableRow key={tenant.id} className="hover:bg-muted/20">
-                      <TableCell className="font-medium">{tenant.firstName} {tenant.lastName}</TableCell>
+                    <TableRow
+                      key={tenant.id}
+                      className="hover:bg-muted/30 cursor-pointer group"
+                      onClick={() => navigate(`/tenants/${tenant.id}`)}
+                    >
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          {tenant.firstName} {tenant.lastName}
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </TableCell>
                       <TableCell className="text-muted-foreground max-w-[200px] truncate" title={tenant.propertyAddress}>
                         {tenant.propertyAddress || 'Unassigned'}
                       </TableCell>
@@ -359,7 +370,7 @@ export default function Tenants() {
                       <TableCell className="text-right font-medium">
                         {formatCurrency(tenant.monthlyRent)}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end gap-2">
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleOpenEdit(tenant)}>
                             <Edit2 className="h-4 w-4" />
