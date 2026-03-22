@@ -37,7 +37,7 @@ type PropDetail = {
   status: string; purchaseDate: string; mortgageLender?: string; mortgageRate?: number;
   mortgageType?: string; mortgageTermYears?: number; mortgageFixEndDate?: string; mortgageBalance?: number;
   photoUrl?: string; rightmoveUrl?: string; zooplaUrl?: string; landRegistryUrl?: string;
-  lettingAgent?: string; lettingAgentPhone?: string; lettingAgentEmail?: string;
+  lettingAgent?: string; lettingAgentPhone?: string; lettingAgentEmail?: string; lettingAgentFee?: number;
   solicitor?: string; solicitorPhone?: string; insuranceProvider?: string;
   insuranceRenewalDate?: string; notes?: string; createdAt: string; updatedAt: string;
 };
@@ -204,7 +204,8 @@ export default function PropertyDetail() {
   }
 
   const p: PropDetail = isEditing ? { ...property, ...editData } : property;
-  const cashflow = p.monthlyRent - p.monthlyMortgage - p.monthlyExpenses;
+  const lettingAgentCost = p.lettingAgent && p.lettingAgentFee ? (p.monthlyRent * p.lettingAgentFee) / 100 : 0;
+  const cashflow = p.monthlyRent - p.monthlyMortgage - p.monthlyExpenses - lettingAgentCost;
   const capitalGain = p.currentValue - p.purchasePrice;
   const capitalGainPct = (capitalGain / p.purchasePrice) * 100;
   const grossYield = (p.monthlyRent * 12 / p.currentValue) * 100;
@@ -399,10 +400,17 @@ export default function PropertyDetail() {
                   </Field>
                 </div>
                 <Separator className="my-3" />
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-4">
+                <div className={`grid gap-x-6 gap-y-4 ${p.lettingAgent ? "grid-cols-2 sm:grid-cols-5" : "grid-cols-2 sm:grid-cols-4"}`}>
                   <Field label="Monthly Rent">{isEditing ? EF("monthlyRent", "number") : <span className="text-sm font-medium">{fmt(p.monthlyRent)}</span>}</Field>
                   <Field label="Monthly Mortgage">{isEditing ? EF("monthlyMortgage", "number") : <span className="text-sm font-medium">{fmt(p.monthlyMortgage)}</span>}</Field>
                   <Field label="Other Expenses">{isEditing ? EF("monthlyExpenses", "number") : <span className="text-sm font-medium">{fmt(p.monthlyExpenses)}</span>}</Field>
+                  {p.lettingAgent && (
+                    <Field label={`Letting Agent Fee${p.lettingAgentFee ? ` (${p.lettingAgentFee}%)` : ""}`}>
+                      <span className="text-sm font-medium text-rose-600">
+                        {lettingAgentCost > 0 ? `−${fmt(lettingAgentCost)}` : "—"}
+                      </span>
+                    </Field>
+                  )}
                   <Field label="Net Cashflow"><span className={`text-sm font-bold ${cashflow >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmt(cashflow)}/mo</span></Field>
                 </div>
                 <div className="mt-4 grid grid-cols-3 gap-3">
@@ -619,6 +627,13 @@ export default function PropertyDetail() {
                   {isEditing ? EF("lettingAgentEmail") : p.lettingAgentEmail
                     ? <a href={`mailto:${p.lettingAgentEmail}`} className="flex items-center gap-1.5 text-sm hover:text-primary"><Mail className="h-3.5 w-3.5" />{p.lettingAgentEmail}</a>
                     : <span className="text-sm text-muted-foreground">—</span>}
+                </Field>
+                <Field label="Management Fee (%)">
+                  {isEditing
+                    ? EF("lettingAgentFee", "number")
+                    : p.lettingAgentFee != null
+                      ? <span className="text-sm font-medium">{p.lettingAgentFee}% <span className="text-muted-foreground font-normal">of rent ({fmt(lettingAgentCost)}/mo)</span></span>
+                      : <span className="text-sm text-muted-foreground">—</span>}
                 </Field>
               </CardContent>
             </Card>

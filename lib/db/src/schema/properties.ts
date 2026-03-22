@@ -34,6 +34,7 @@ export const propertiesTable = pgTable("properties", {
   lettingAgent: text("letting_agent"),
   lettingAgentPhone: text("letting_agent_phone"),
   lettingAgentEmail: text("letting_agent_email"),
+  lettingAgentFee: numeric("letting_agent_fee", { precision: 5, scale: 2 }),
   solicitor: text("solicitor"),
   solicitorPhone: text("solicitor_phone"),
   insuranceProvider: text("insurance_provider"),
