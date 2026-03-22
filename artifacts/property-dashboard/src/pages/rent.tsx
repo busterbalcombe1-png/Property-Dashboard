@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/auth-context";
 import { format, isAfter, isBefore, parseISO } from "date-fns";
 import {
   PoundSterling, AlertTriangle, CheckCircle2, Clock, Plus, Trash2,
@@ -653,6 +654,7 @@ function AddDepositDialog({ open, onClose, properties, tenants, onSaved, editDep
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function RentTracking() {
+  const { isReadOnly } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [propFilter, setPropFilter] = useState("all");
@@ -819,9 +821,9 @@ export default function RentTracking() {
             <Card className="border-border/50 shadow-sm">
               <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
                 <CardTitle className="text-base">Rent Ledger</CardTitle>
-                <Button size="sm" onClick={() => setAddPaymentOpen(true)}>
+                {!isReadOnly && <Button size="sm" onClick={() => setAddPaymentOpen(true)}>
                   <Plus className="mr-2 h-4 w-4" />Add Payment
-                </Button>
+                </Button>}
               </CardHeader>
               <CardContent className="p-0">
                 {paymentsLoading ? <div className="p-6"><Skeleton className="h-48 w-full" /></div>
@@ -873,12 +875,14 @@ export default function RentTracking() {
                                       <Info className="h-3.5 w-3.5 text-muted-foreground/50" />
                                     </span>
                                   )}
+                                  {!isReadOnly && <>
                                   <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setEditPayment(p)}>
                                     <Edit2 className="h-3.5 w-3.5" />
                                   </Button>
                                   <Button variant="ghost" size="icon" className="h-7 w-7 text-rose-400/60 hover:text-rose-600 hover:bg-rose-500/10" onClick={() => deletePayment(p.id)}>
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </Button>
+                                  </>}
                                 </div>
                               </td>
                             </tr>
@@ -896,9 +900,9 @@ export default function RentTracking() {
             <Card className="border-border/50 shadow-sm">
               <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
                 <CardTitle className="text-base">Charges &amp; Expenses</CardTitle>
-                <Button size="sm" onClick={() => setAddChargeOpen(true)}>
+                {!isReadOnly && <Button size="sm" onClick={() => setAddChargeOpen(true)}>
                   <Plus className="mr-2 h-4 w-4" />Add Charge
-                </Button>
+                </Button>}
               </CardHeader>
               <CardContent className="p-0">
                 {chargesLoading ? <div className="p-6"><Skeleton className="h-48 w-full" /></div>
@@ -943,14 +947,14 @@ export default function RentTracking() {
                               <td className="py-3 px-4">
                                 <div className="flex items-center gap-1 justify-end">
                                   {c.notes && <span title={c.notes} className="cursor-help"><Info className="h-3.5 w-3.5 text-muted-foreground/50" /></span>}
-                                  {!c.isPaid && (
+                                  {!c.isPaid && !isReadOnly && (
                                     <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600/60 hover:text-emerald-600" onClick={() => markChargePaid(c)} title="Mark paid">
                                       <CheckCircle2 className="h-3.5 w-3.5" />
                                     </Button>
                                   )}
-                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-rose-400/60 hover:text-rose-600 hover:bg-rose-500/10" onClick={() => deleteCharge(c.id)}>
+                                  {!isReadOnly && <Button variant="ghost" size="icon" className="h-7 w-7 text-rose-400/60 hover:text-rose-600 hover:bg-rose-500/10" onClick={() => deleteCharge(c.id)}>
                                     <Trash2 className="h-3.5 w-3.5" />
-                                  </Button>
+                                  </Button>}
                                 </div>
                               </td>
                             </tr>
@@ -978,9 +982,9 @@ export default function RentTracking() {
                     Maximum deposit is <strong>5 weeks' rent</strong>.
                   </p>
                 </div>
-                <Button size="sm" onClick={() => setAddDepositOpen(true)}>
+                {!isReadOnly && <Button size="sm" onClick={() => setAddDepositOpen(true)}>
                   <Plus className="mr-2 h-4 w-4" />Add Deposit
-                </Button>
+                </Button>}
               </div>
 
               {depositsLoading ? <Skeleton className="h-48 w-full" />
@@ -1052,14 +1056,14 @@ export default function RentTracking() {
                                 </div>
                                 {d.notes && <p className="text-xs text-muted-foreground mt-3 italic">"{d.notes}"</p>}
                               </div>
-                              <div className="flex gap-2 shrink-0">
+                              {!isReadOnly && <div className="flex gap-2 shrink-0">
                                 <Button variant="outline" size="sm" onClick={() => setEditDeposit(d)}>
                                   <Edit2 className="h-3.5 w-3.5 mr-1.5" />Edit
                                 </Button>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-400/60 hover:text-rose-600 hover:bg-rose-500/10" onClick={() => deleteDeposit(d.id)}>
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
-                              </div>
+                              </div>}
                             </div>
                           </CardContent>
                         </Card>

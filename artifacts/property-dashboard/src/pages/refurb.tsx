@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { Plus, Download, Edit2, Trash2, Hammer } from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -58,6 +59,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function RefurbTracker() {
+  const { isReadOnly } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: projects, isLoading } = useListRefurb();
@@ -176,7 +178,7 @@ export default function RefurbTracker() {
               <Download className="mr-2 h-4 w-4" /> Export
             </Button>
             
-            <Dialog open={dialogOpen} onOpenChange={(open) => {
+            {!isReadOnly && <Dialog open={dialogOpen} onOpenChange={(open) => {
               if(!open) setEditingProject(null);
               setDialogOpen(open);
             }}>
@@ -261,7 +263,7 @@ export default function RefurbTracker() {
                   </form>
                 </Form>
               </DialogContent>
-            </Dialog>
+            </Dialog>}
           </div>
         </div>
 
@@ -340,12 +342,14 @@ export default function RefurbTracker() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            {!isReadOnly && <>
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleOpenEdit(proj)}>
                               <Edit2 className="h-4 w-4" />
                             </Button>
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500/70 hover:text-rose-600 hover:bg-rose-500/10" onClick={() => setDeleteId(proj.id)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
+                            </>}
                           </div>
                         </TableCell>
                       </TableRow>

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/auth-context";
 
 const LOAD_DURATION = 3600;
-const CREDENTIALS: Record<string, string> = { admin: "propdash", james: "propdash" };
+const CREDENTIALS: Record<string, string> = { admin: "propdash", james: "propdash", charlesbalcombe: "A7@k3s9gs" };
 
 function LoadingScreen({ onComplete }: { onComplete: () => void }) {
   const [progress, setProgress] = useState(0);

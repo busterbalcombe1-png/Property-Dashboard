@@ -1,4 +1,5 @@
 import { useParams, useLocation } from "wouter";
+import { useAuth } from "@/contexts/auth-context";
 import { format, differenceInDays, differenceInMonths, differenceInYears, isPast } from "date-fns";
 import {
   ArrowLeft, Mail, Phone, Home, Calendar, PoundSterling,
@@ -100,6 +101,7 @@ function KpiCard({ label, value, sub, icon: Icon }: { label: string; value: stri
 }
 
 export default function TenantDetail() {
+  const { isReadOnly } = useAuth();
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const tenantId = parseInt(id ?? "0");
@@ -211,9 +213,9 @@ export default function TenantDetail() {
             <span className="text-muted-foreground/40">/</span>
             <span className="text-sm font-medium">{tenant.firstName} {tenant.lastName}</span>
           </div>
-          <Button size="sm" onClick={openEdit}>
+          {!isReadOnly && <Button size="sm" onClick={openEdit}>
             <Edit2 className="mr-2 h-4 w-4" />Edit Tenant
-          </Button>
+          </Button>}
         </div>
 
         {/* Name + status heading */}

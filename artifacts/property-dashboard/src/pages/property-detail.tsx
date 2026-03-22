@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
+import { useAuth } from "@/contexts/auth-context";
 import { format, differenceInMonths, differenceInYears } from "date-fns";
 import {
   ArrowLeft, Upload, Home, ExternalLink, Edit2, Save, X, Plus, Trash2,
@@ -77,6 +78,7 @@ const Field = ({ label, children }: { label: string; children: React.ReactNode }
 );
 
 export default function PropertyDetail() {
+  const { isReadOnly } = useAuth();
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const propertyId = parseInt(id ?? "0");
@@ -254,7 +256,7 @@ export default function PropertyDetail() {
             <ArrowLeft className="mr-2 h-4 w-4" />Back to Properties
           </Button>
           <div className="flex-1" />
-          {isEditing ? (
+          {!isReadOnly && (isEditing ? (
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={cancelEdit}><X className="mr-2 h-4 w-4" />Cancel</Button>
               <Button size="sm" onClick={saveEdit} disabled={saving}>
@@ -263,7 +265,7 @@ export default function PropertyDetail() {
             </div>
           ) : (
             <Button size="sm" onClick={startEdit}><Edit2 className="mr-2 h-4 w-4" />Edit Property</Button>
-          )}
+          ))}
         </div>
 
         {/* Address + thumbnail */}
@@ -285,8 +287,8 @@ export default function PropertyDetail() {
           <div
             className="shrink-0 relative overflow-hidden rounded-lg cursor-pointer"
             style={{ width: 250, aspectRatio: "4/3", background: "#0c1220" }}
-            onClick={() => fileInputRef.current?.click()}
-            title={uploading ? "Uploading…" : p.photoUrl ? "Change photo" : "Upload photo"}
+            onClick={() => !isReadOnly && fileInputRef.current?.click()}
+            title={isReadOnly ? "" : uploading ? "Uploading…" : p.photoUrl ? "Change photo" : "Upload photo"}
           >
             {p.photoUrl ? (
               <>
@@ -308,11 +310,11 @@ export default function PropertyDetail() {
                 <span className="text-[10px] tracking-wide">Add photo</span>
               </div>
             )}
-            {/* Hover overlay */}
-            <div className="absolute inset-0 z-20 bg-black/0 hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
+            {/* Hover overlay — only for admin */}
+            {!isReadOnly && <div className="absolute inset-0 z-20 bg-black/0 hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
               <Upload className="h-5 w-5 text-white drop-shadow" />
-            </div>
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+            </div>}
+            {!isReadOnly && <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />}
           </div>
         </div>
 

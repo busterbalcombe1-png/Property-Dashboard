@@ -2,6 +2,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { Plus, Download, Edit2, Trash2, Users, ChevronRight } from "lucide-react";
 import { useLocation } from "wouter";
+import { useAuth } from "@/contexts/auth-context";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -69,6 +70,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function Tenants() {
+  const { isReadOnly } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
@@ -190,7 +192,7 @@ export default function Tenants() {
               <Download className="mr-2 h-4 w-4" /> Export
             </Button>
             
-            <Dialog open={dialogOpen} onOpenChange={(open) => {
+            {!isReadOnly && <Dialog open={dialogOpen} onOpenChange={(open) => {
               if(!open) setEditingTenant(null);
               setDialogOpen(open);
             }}>
@@ -293,7 +295,7 @@ export default function Tenants() {
                   </form>
                 </Form>
               </DialogContent>
-            </Dialog>
+            </Dialog>}
           </div>
         </div>
 
@@ -372,12 +374,14 @@ export default function Tenants() {
                       </TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end gap-2">
+                          {!isReadOnly && <>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleOpenEdit(tenant)}>
                             <Edit2 className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500/70 hover:text-rose-600 hover:bg-rose-500/10" onClick={() => setDeleteId(tenant.id)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
+                          </>}
                         </div>
                       </TableCell>
                     </TableRow>

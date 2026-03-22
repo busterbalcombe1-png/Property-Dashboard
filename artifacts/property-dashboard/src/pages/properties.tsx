@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useAuth } from "@/contexts/auth-context";
 import { format } from "date-fns";
 import { Plus, Download, Edit2, Trash2, Home, ChevronRight } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -93,6 +94,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function Properties() {
+  const { isReadOnly } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
@@ -218,7 +220,7 @@ export default function Properties() {
               <Download className="mr-2 h-4 w-4" /> Export
             </Button>
             
-            <Dialog open={dialogOpen} onOpenChange={(open) => {
+            {!isReadOnly && <Dialog open={dialogOpen} onOpenChange={(open) => {
               if(!open) setEditingProperty(null);
               setDialogOpen(open);
             }}>
@@ -339,7 +341,7 @@ export default function Properties() {
                   </form>
                 </Form>
               </DialogContent>
-            </Dialog>
+            </Dialog>}
           </div>
         </div>
 
@@ -410,12 +412,14 @@ export default function Properties() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
+                          {!isReadOnly && <>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); handleOpenEdit(property); }}>
                             <Edit2 className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500/70 hover:text-rose-600 hover:bg-rose-500/10" onClick={(e) => { e.stopPropagation(); setDeleteId(property.id); }}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
+                          </>}
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => navigate(`/properties/${property.id}`)}>
                             <ChevronRight className="h-4 w-4" />
                           </Button>
