@@ -35,6 +35,7 @@ function StatCard({
   icon: Icon, 
   trend, 
   trendLabel,
+  subtitle,
   loading 
 }: { 
   title: string; 
@@ -42,6 +43,7 @@ function StatCard({
   icon: React.ElementType; 
   trend?: number; 
   trendLabel?: string;
+  subtitle?: string;
   loading?: boolean 
 }) {
   return (
@@ -58,6 +60,9 @@ function StatCard({
         ) : (
           <>
             <div className="text-2xl font-bold tracking-tight text-foreground">{value}</div>
+            {subtitle && (
+              <div className="mt-1 text-xs text-muted-foreground">{subtitle}</div>
+            )}
             {trend !== undefined && (
               <div className="mt-1 flex items-center text-xs">
                 {trend >= 0 ? (
@@ -121,6 +126,7 @@ export default function Dashboard() {
             title="Total Rent Income"
             value={stats ? formatCurrency(stats.monthlyRentIncome) : "£0"}
             icon={PoundSterling}
+            subtitle={stats ? `${formatCurrency(stats.monthlyRentIncome * 12)}/year` : undefined}
             loading={isLoading}
           />
         </div>
