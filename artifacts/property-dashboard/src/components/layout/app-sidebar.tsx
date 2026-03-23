@@ -105,22 +105,24 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
 
-                <SidebarMenuSub>
-                  {overviewSubItems.map(sub => (
-                    <SidebarMenuSubItem key={sub.url}>
-                      <SidebarMenuSubButton
-                        asChild
-                        isActive={isLocationsActive}
-                        className="transition-all duration-200"
-                      >
-                        <Link href={sub.url}>
-                          <sub.icon className="h-3.5 w-3.5" />
-                          <span>{sub.title}</span>
-                        </Link>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  ))}
-                </SidebarMenuSub>
+                {(isOverviewActive || isLocationsActive) && (
+                  <SidebarMenuSub>
+                    {overviewSubItems.map(sub => (
+                      <SidebarMenuSubItem key={sub.url}>
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={isLocationsActive}
+                          className="transition-all duration-200"
+                        >
+                          <Link href={sub.url}>
+                            <sub.icon className="h-3.5 w-3.5" />
+                            <span>{sub.title}</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                )}
               </SidebarMenuItem>
 
               {/* Rest of nav items */}
