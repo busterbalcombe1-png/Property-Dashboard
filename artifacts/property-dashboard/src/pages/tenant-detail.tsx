@@ -54,6 +54,7 @@ type TenantDetail = {
   id: number; firstName: string; lastName: string; email: string; phone: string;
   propertyId: number; propertyAddress: string; leaseStart: string; leaseEnd: string;
   monthlyRent: number; depositPaid: number; status: string; notes?: string;
+  partnerFirstName?: string; partnerLastName?: string; partnerEmail?: string; partnerPhone?: string;
   createdAt: string; updatedAt: string;
 };
 
@@ -403,20 +404,43 @@ export default function TenantDetail() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Email</p>
-                  <a href={`mailto:${tenant.email}`} className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors">
-                    <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                    {tenant.email}
-                  </a>
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-2">Lead Tenant</p>
+                  <div className="space-y-2">
+                    <a href={`mailto:${tenant.email}`} className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors">
+                      <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                      {tenant.email}
+                    </a>
+                    <a href={`tel:${tenant.phone}`} className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors">
+                      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                      {tenant.phone}
+                    </a>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Phone</p>
-                  <a href={`tel:${tenant.phone}`} className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors">
-                    <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                    {tenant.phone}
-                  </a>
-                </div>
+                {(tenant.partnerFirstName || tenant.partnerEmail || tenant.partnerPhone) && (
+                  <>
+                    <Separator />
+                    <div>
+                      <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-2">
+                        Partner{tenant.partnerFirstName ? ` — ${tenant.partnerFirstName}${tenant.partnerLastName ? " " + tenant.partnerLastName : ""}` : ""}
+                      </p>
+                      <div className="space-y-2">
+                        {tenant.partnerEmail && (
+                          <a href={`mailto:${tenant.partnerEmail}`} className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors">
+                            <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                            {tenant.partnerEmail}
+                          </a>
+                        )}
+                        {tenant.partnerPhone && (
+                          <a href={`tel:${tenant.partnerPhone}`} className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors">
+                            <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                            {tenant.partnerPhone}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
                 <Separator />
                 <div className="space-y-1">
                   <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Tenant Since</p>

@@ -15,6 +15,10 @@ export const tenantsTable = pgTable("tenants", {
   depositPaid: numeric("deposit_paid", { precision: 10, scale: 2 }).notNull(),
   status: text("status").notNull().default("active"),
   notes: text("notes"),
+  partnerFirstName: text("partner_first_name"),
+  partnerLastName: text("partner_last_name"),
+  partnerEmail: text("partner_email"),
+  partnerPhone: text("partner_phone"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

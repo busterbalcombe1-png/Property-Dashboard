@@ -54,7 +54,11 @@ const tenantSchema = z.object({
   monthlyRent: z.coerce.number().min(0),
   depositPaid: z.coerce.number().min(0),
   status: z.enum(["active", "inactive", "pending"]),
-  notes: z.string().optional()
+  notes: z.string().optional(),
+  partnerFirstName: z.string().optional(),
+  partnerLastName: z.string().optional(),
+  partnerEmail: z.string().email("Valid email required").optional().or(z.literal("")),
+  partnerPhone: z.string().optional(),
 });
 
 const formatCurrency = (val: number) => 
@@ -126,7 +130,11 @@ export default function Tenants() {
       monthlyRent: 0,
       depositPaid: 0,
       status: "active",
-      notes: ""
+      notes: "",
+      partnerFirstName: "",
+      partnerLastName: "",
+      partnerEmail: "",
+      partnerPhone: "",
     }
   });
 
@@ -143,7 +151,11 @@ export default function Tenants() {
       monthlyRent: tenant.monthlyRent,
       depositPaid: tenant.depositPaid,
       status: tenant.status,
-      notes: tenant.notes || ""
+      notes: tenant.notes || "",
+      partnerFirstName: (tenant as unknown as Record<string,string>).partnerFirstName || "",
+      partnerLastName: (tenant as unknown as Record<string,string>).partnerLastName || "",
+      partnerEmail: (tenant as unknown as Record<string,string>).partnerEmail || "",
+      partnerPhone: (tenant as unknown as Record<string,string>).partnerPhone || "",
     });
     setDialogOpen(true);
   };
@@ -161,7 +173,11 @@ export default function Tenants() {
       monthlyRent: 0,
       depositPaid: 0,
       status: "active",
-      notes: ""
+      notes: "",
+      partnerFirstName: "",
+      partnerLastName: "",
+      partnerEmail: "",
+      partnerPhone: "",
     });
     setDialogOpen(true);
   };
@@ -228,6 +244,29 @@ export default function Tenants() {
 
                       <FormField control={form.control} name="phone" render={({ field }) => (
                         <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+
+                      {/* Partner / Joint Tenant Details */}
+                      <div className="md:col-span-2 mt-4 mb-1">
+                        <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Partner / Joint Tenant</h4>
+                        <p className="text-xs text-muted-foreground mt-0.5">Optional — for joint tenancies or couples</p>
+                        <div className="h-px w-full bg-border mt-2"></div>
+                      </div>
+
+                      <FormField control={form.control} name="partnerFirstName" render={({ field }) => (
+                        <FormItem><FormLabel>Partner First Name</FormLabel><FormControl><Input placeholder="Optional" {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+
+                      <FormField control={form.control} name="partnerLastName" render={({ field }) => (
+                        <FormItem><FormLabel>Partner Last Name</FormLabel><FormControl><Input placeholder="Optional" {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+
+                      <FormField control={form.control} name="partnerEmail" render={({ field }) => (
+                        <FormItem><FormLabel>Partner Email</FormLabel><FormControl><Input type="email" placeholder="Optional" {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+
+                      <FormField control={form.control} name="partnerPhone" render={({ field }) => (
+                        <FormItem><FormLabel>Partner Phone</FormLabel><FormControl><Input placeholder="Optional" {...field} /></FormControl><FormMessage /></FormItem>
                       )} />
 
                       <div className="md:col-span-2 mt-4 mb-2">

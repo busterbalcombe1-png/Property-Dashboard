@@ -52,6 +52,10 @@ router.post("/tenants", async (req, res) => {
       depositPaid: String(body.depositPaid),
       status: body.status,
       notes: body.notes ?? null,
+      partnerFirstName: body.partnerFirstName ?? null,
+      partnerLastName: body.partnerLastName ?? null,
+      partnerEmail: body.partnerEmail ?? null,
+      partnerPhone: body.partnerPhone ?? null,
     }).returning();
     const [prop] = await db.select({ address: propertiesTable.address }).from(propertiesTable).where(eq(propertiesTable.id, row.propertyId));
     res.status(201).json(formatTenant(row, prop?.address));
@@ -77,6 +81,10 @@ router.put("/tenants/:id", async (req, res) => {
       depositPaid: String(body.depositPaid),
       status: body.status,
       notes: body.notes ?? null,
+      partnerFirstName: body.partnerFirstName ?? null,
+      partnerLastName: body.partnerLastName ?? null,
+      partnerEmail: body.partnerEmail ?? null,
+      partnerPhone: body.partnerPhone ?? null,
       updatedAt: new Date(),
     }).where(eq(tenantsTable.id, id)).returning();
     if (!row) return res.status(404).json({ error: "Tenant not found" });
@@ -114,6 +122,10 @@ function formatTenant(row: typeof tenantsTable.$inferSelect, propertyAddress?: s
     depositPaid: parseFloat(row.depositPaid),
     status: row.status,
     notes: row.notes ?? undefined,
+    partnerFirstName: row.partnerFirstName ?? undefined,
+    partnerLastName: row.partnerLastName ?? undefined,
+    partnerEmail: row.partnerEmail ?? undefined,
+    partnerPhone: row.partnerPhone ?? undefined,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
