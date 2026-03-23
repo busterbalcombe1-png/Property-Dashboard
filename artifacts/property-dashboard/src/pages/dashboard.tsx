@@ -4,14 +4,12 @@ import {
   Wallet, 
   PoundSterling,
   ArrowUpRight,
-  ArrowDownRight,
-  MapPin
+  ArrowDownRight
 } from "lucide-react";
 import { useGetStats } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AppLayout } from "@/components/layout/app-layout";
-import { PropertyMap } from "@/components/property-map";
 import {
   AreaChart,
   Area,
@@ -132,20 +130,6 @@ export default function Dashboard() {
             loading={isLoading}
           />
         </div>
-
-        {/* Property Location Map */}
-        <Card className="border-border/50 shadow-sm">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-primary" />
-              <CardTitle className="text-lg">Property Locations</CardTitle>
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">Overview of all properties across the portfolio</p>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <PropertyMap />
-          </CardContent>
-        </Card>
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

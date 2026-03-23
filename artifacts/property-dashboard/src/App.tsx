@@ -13,6 +13,7 @@ import TenantDetail from "./pages/tenant-detail";
 import Maintenance from "./pages/maintenance";
 import RefurbTracker from "./pages/refurb";
 import RentTracking from "./pages/rent";
+import PropertyLocations from "./pages/property-locations";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -32,6 +33,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
+      <Route path="/property-locations" component={PropertyLocations} />
       <Route path="/properties" component={Properties} />
       <Route path="/properties/:id" component={PropertyDetail} />
       <Route path="/tenants" component={Tenants} />

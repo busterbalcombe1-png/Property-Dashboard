@@ -7,7 +7,8 @@ import {
   Wrench, 
   Hammer,
   PoundSterling,
-  LogOut
+  LogOut,
+  MapPin
 } from "lucide-react";
 import {
   Sidebar,
@@ -19,11 +20,13 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   SidebarHeader
 } from "@/components/ui/sidebar";
 
-const navItems = [
-  { title: "Overview", url: "/", icon: LayoutDashboard },
+const mainNavItems = [
   { title: "Properties", url: "/properties", icon: Building2 },
   { title: "Tenants", url: "/tenants", icon: Users },
   { title: "Rent Accounts", url: "/rent", icon: PoundSterling },
@@ -31,7 +34,11 @@ const navItems = [
   { title: "Refurb Tracker", url: "/refurb", icon: Hammer },
 ];
 
-function NavLink({ item }: { item: typeof navItems[0] }) {
+const overviewSubItems = [
+  { title: "Property Locations", url: "/property-locations", icon: MapPin },
+];
+
+function NavLink({ item }: { item: { title: string; url: string; icon: React.ElementType } }) {
   const [isActive] = useRoute(item.url);
   
   return (
@@ -54,6 +61,8 @@ function NavLink({ item }: { item: typeof navItems[0] }) {
 export function AppSidebar() {
   const { logout, user } = useAuth();
   const [, navigate] = useLocation();
+  const [isOverviewActive] = useRoute("/");
+  const [isLocationsActive] = useRoute("/property-locations");
 
   const handleLogout = () => {
     logout();
@@ -82,7 +91,40 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
+              {/* Overview with indented sub-items */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isOverviewActive}
+                  tooltip="Overview"
+                  className="transition-all duration-200"
+                >
+                  <Link href="/">
+                    <LayoutDashboard className="h-4 w-4" />
+                    <span className="font-medium">Overview</span>
+                  </Link>
+                </SidebarMenuButton>
+
+                <SidebarMenuSub>
+                  {overviewSubItems.map(sub => (
+                    <SidebarMenuSubItem key={sub.url}>
+                      <SidebarMenuSubButton
+                        asChild
+                        isActive={isLocationsActive}
+                        className="transition-all duration-200"
+                      >
+                        <Link href={sub.url}>
+                          <sub.icon className="h-3.5 w-3.5" />
+                          <span>{sub.title}</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  ))}
+                </SidebarMenuSub>
+              </SidebarMenuItem>
+
+              {/* Rest of nav items */}
+              {mainNavItems.map((item) => (
                 <NavLink key={item.url} item={item} />
               ))}
             </SidebarMenu>
