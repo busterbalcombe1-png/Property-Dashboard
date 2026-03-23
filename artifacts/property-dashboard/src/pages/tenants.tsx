@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { Plus, Download, Edit2, Trash2, Users, ChevronRight } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/auth-context";
 import { useForm } from "react-hook-form";
@@ -85,6 +86,7 @@ export default function Tenants() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
+  const [showPartner, setShowPartner] = useState(false);
 
   const createMutation = useCreateTenant({
     mutation: {
@@ -157,6 +159,8 @@ export default function Tenants() {
       partnerEmail: (tenant as unknown as Record<string,string>).partnerEmail || "",
       partnerPhone: (tenant as unknown as Record<string,string>).partnerPhone || "",
     });
+    const t = tenant as unknown as Record<string,string>;
+    setShowPartner(!!(t.partnerFirstName || t.partnerLastName || t.partnerEmail || t.partnerPhone));
     setDialogOpen(true);
   };
 
@@ -179,6 +183,7 @@ export default function Tenants() {
       partnerEmail: "",
       partnerPhone: "",
     });
+    setShowPartner(false);
     setDialogOpen(true);
   };
 
@@ -248,26 +253,48 @@ export default function Tenants() {
 
                       {/* Partner / Joint Tenant Details */}
                       <div className="md:col-span-2 mt-4 mb-1">
-                        <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Partner / Joint Tenant</h4>
-                        <p className="text-xs text-muted-foreground mt-0.5">Optional — for joint tenancies or couples</p>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Partner / Joint Tenant</h4>
+                            <p className="text-xs text-muted-foreground mt-0.5">Optional — for joint tenancies or couples</p>
+                          </div>
+                          <div className="flex items-center gap-2 pt-0.5">
+                            <Checkbox
+                              id="partnerToggle"
+                              checked={showPartner}
+                              onCheckedChange={(v) => {
+                                setShowPartner(!!v);
+                                if (!v) {
+                                  form.setValue("partnerFirstName", "");
+                                  form.setValue("partnerLastName", "");
+                                  form.setValue("partnerEmail", "");
+                                  form.setValue("partnerPhone", "");
+                                }
+                              }}
+                            />
+                            <label htmlFor="partnerToggle" className="text-xs text-muted-foreground cursor-pointer select-none">Add partner</label>
+                          </div>
+                        </div>
                         <div className="h-px w-full bg-border mt-2"></div>
                       </div>
 
-                      <FormField control={form.control} name="partnerFirstName" render={({ field }) => (
-                        <FormItem><FormLabel>Partner First Name</FormLabel><FormControl><Input placeholder="Optional" {...field} /></FormControl><FormMessage /></FormItem>
-                      )} />
+                      {showPartner && <>
+                        <FormField control={form.control} name="partnerFirstName" render={({ field }) => (
+                          <FormItem><FormLabel>First Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
 
-                      <FormField control={form.control} name="partnerLastName" render={({ field }) => (
-                        <FormItem><FormLabel>Partner Last Name</FormLabel><FormControl><Input placeholder="Optional" {...field} /></FormControl><FormMessage /></FormItem>
-                      )} />
+                        <FormField control={form.control} name="partnerLastName" render={({ field }) => (
+                          <FormItem><FormLabel>Last Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
 
-                      <FormField control={form.control} name="partnerEmail" render={({ field }) => (
-                        <FormItem><FormLabel>Partner Email</FormLabel><FormControl><Input type="email" placeholder="Optional" {...field} /></FormControl><FormMessage /></FormItem>
-                      )} />
+                        <FormField control={form.control} name="partnerEmail" render={({ field }) => (
+                          <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
 
-                      <FormField control={form.control} name="partnerPhone" render={({ field }) => (
-                        <FormItem><FormLabel>Partner Phone</FormLabel><FormControl><Input placeholder="Optional" {...field} /></FormControl><FormMessage /></FormItem>
-                      )} />
+                        <FormField control={form.control} name="partnerPhone" render={({ field }) => (
+                          <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                      </>}
 
                       <div className="md:col-span-2 mt-4 mb-2">
                         <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Lease Details</h4>
