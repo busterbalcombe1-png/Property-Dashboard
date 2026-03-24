@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAuth } from "@/contexts/auth-context";
 import { format, differenceInMonths, differenceInYears } from "date-fns";
@@ -126,16 +126,14 @@ export default function PropertyDetail() {
 
   const [valuations, setValuations] = useState<Valuation[] | null>(null);
   const [valuationsLoading, setValuationsLoading] = useState(false);
-  const valuationsFetched = useRef(false);
 
-  const fetchValuations = useCallback(async () => {
-    if (valuationsFetched.current) return;
-    valuationsFetched.current = true;
+  useEffect(() => {
+    if (!propertyId) return;
     setValuationsLoading(true);
-    try {
-      const res = await fetch(`/api/properties/${propertyId}/valuations`);
-      setValuations(await res.json());
-    } finally { setValuationsLoading(false); }
+    fetch(`/api/properties/${propertyId}/valuations`)
+      .then(r => r.json())
+      .then(data => setValuations(data))
+      .finally(() => setValuationsLoading(false));
   }, [propertyId]);
 
   const [showAddVal, setShowAddVal] = useState(false);
@@ -148,7 +146,6 @@ export default function PropertyDetail() {
     if (!property) return;
     setEditData({ ...property });
     setIsEditing(true);
-    fetchValuations();
   };
 
   const cancelEdit = () => { setIsEditing(false); setEditData({}); };
@@ -542,14 +539,11 @@ export default function PropertyDetail() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base flex items-center gap-2"><TrendingUp className="h-4 w-4 text-muted-foreground" />Valuation History</CardTitle>
-                  <div className="flex gap-2">
-                    {valuations === null && (
-                      <Button variant="outline" size="sm" onClick={fetchValuations}>Load History</Button>
-                    )}
-                    <Button variant="outline" size="sm" onClick={() => { fetchValuations(); setShowAddVal(true); }}>
+                  {!isReadOnly && (
+                    <Button variant="outline" size="sm" onClick={() => setShowAddVal(true)}>
                       <Plus className="mr-1 h-3 w-3" />Add Valuation
                     </Button>
-                  </div>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
@@ -620,13 +614,11 @@ export default function PropertyDetail() {
                         ))}
                       </div>
                     </>
-                  ) : valuations !== null ? (
+                  ) : (
                     <div className="flex flex-col items-center py-8 text-muted-foreground gap-2">
                       <TrendingUp className="h-8 w-8 opacity-20" />
-                      <p className="text-sm">No valuations yet. Add one above to start tracking.</p>
+                      <p className="text-sm">No valuations yet.{!isReadOnly && " Add one above to start tracking."}</p>
                     </div>
-                  ) : (
-                    <p className="text-sm text-center text-muted-foreground py-6">Click "Load History" or "Add Valuation" to get started.</p>
                   )}
               </CardContent>
             </Card>
