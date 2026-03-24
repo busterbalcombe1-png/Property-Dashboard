@@ -174,19 +174,19 @@ export function PropertyMap() {
   }, {});
 
   if (isLoading) {
-    return <Skeleton className="h-[420px] w-full rounded-xl" />;
+    return <Skeleton className="h-[680px] w-full rounded-xl" />;
   }
 
   if (!properties?.length) {
     return (
-      <div className="h-[420px] flex items-center justify-center text-muted-foreground text-sm border rounded-xl border-border/50">
+      <div className="h-[680px] flex items-center justify-center text-muted-foreground text-sm border rounded-xl border-border/50">
         No properties to display on the map.
       </div>
     );
   }
 
   return (
-    <div className="relative rounded-xl overflow-hidden border border-border/50 shadow-sm" style={{ height: 420 }}>
+    <div className="relative rounded-xl overflow-hidden border border-border/50 shadow-sm" style={{ height: 680 }}>
       {/* Loading overlay while geocoding */}
       {geocoding && geocoded.length === 0 && (
         <div className="absolute inset-0 z-[400] flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm gap-3">
