@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import {
   ArrowLeft, ExternalLink, Save, Trash2, Target, CheckCircle2,
   Phone, TrendingUp, Home, PoundSterling, FileText, Trophy,
-  Edit2, X, ChevronRight, Circle, AlertCircle,
+  Edit2, X, ChevronRight, ChevronLeft, Circle, AlertCircle, ImageIcon,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
@@ -191,6 +191,11 @@ export default function DealDetail() {
   const [editBasics, setEditBasics] = useState(false);
   const [basicsDraft, setBasicsDraft] = useState<Partial<Deal>>({});
   const [data, setData] = useState<DealData>({});
+  const [rmImages, setRmImages] = useState<{ url: string; caption: string }[]>([]);
+  const [rmFloorplans, setRmFloorplans] = useState<{ url: string; caption: string }[]>([]);
+  const [imagesLoading, setImagesLoading] = useState(false);
+  const [imageIdx, setImageIdx] = useState(0);
+  const [fpIdx, setFpIdx] = useState(0);
 
   useEffect(() => {
     fetch(`/api/deals/${dealId}`)
@@ -198,6 +203,21 @@ export default function DealDetail() {
       .then((d: Deal) => { setDeal(d); setData(d.data ?? {}); })
       .finally(() => setLoading(false));
   }, [dealId]);
+
+  useEffect(() => {
+    if (!deal?.rightmoveUrl) return;
+    setImagesLoading(true);
+    setImageIdx(0);
+    setFpIdx(0);
+    fetch(`/api/rightmove-images?url=${encodeURIComponent(deal.rightmoveUrl)}`)
+      .then(r => r.json())
+      .then((d: { images?: { url: string; caption: string }[]; floorplans?: { url: string; caption: string }[] }) => {
+        setRmImages(d.images ?? []);
+        setRmFloorplans(d.floorplans ?? []);
+      })
+      .catch(() => {})
+      .finally(() => setImagesLoading(false));
+  }, [deal?.rightmoveUrl]);
 
   const save = async (overrides?: Partial<Deal>) => {
     if (!deal) return;
@@ -301,7 +321,8 @@ export default function DealDetail() {
 
   return (
     <AppLayout>
-      <div className="flex flex-col gap-6 max-w-4xl">
+      <div className="flex gap-6 items-start">
+        <div className="flex-1 min-w-0 flex flex-col gap-6">
 
         {/* Back + header */}
         <div className="flex items-center justify-between">
@@ -1106,7 +1127,125 @@ export default function DealDetail() {
           </AccordionItem>
 
         </Accordion>
-      </div>
+        </div>{/* end left column */}
+
+        {/* ── Right sidebar: property photos & floor plan ────────────────── */}
+        <div className="w-72 xl:w-80 shrink-0 hidden lg:flex flex-col gap-3">
+          <div className="sticky top-4 flex flex-col gap-3">
+
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground">Property Photos</h3>
+              {deal.rightmoveUrl && (
+                <a href={deal.rightmoveUrl} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-primary hover:underline">
+                  <ExternalLink className="h-3 w-3" />Rightmove
+                </a>
+              )}
+            </div>
+
+            {/* No URL state */}
+            {!deal.rightmoveUrl ? (
+              <div className="rounded-xl border border-dashed border-border bg-muted/30 p-6 text-center space-y-2">
+                <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground/20" />
+                <p className="text-xs text-muted-foreground">Add a Rightmove URL in the edit panel above to load photos automatically.</p>
+              </div>
+
+            ) : imagesLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="w-full aspect-video rounded-xl" />
+                <div className="grid grid-cols-4 gap-1">
+                  {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="aspect-square rounded-md" />)}
+                </div>
+              </div>
+
+            ) : rmImages.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border bg-muted/30 p-5 text-center space-y-2">
+                <AlertCircle className="h-7 w-7 mx-auto text-muted-foreground/30" />
+                <p className="text-xs text-muted-foreground">Couldn't load photos automatically from Rightmove.</p>
+                <a href={deal.rightmoveUrl} target="_blank" rel="noopener noreferrer"
+                  className="text-xs text-primary hover:underline block">View listing directly →</a>
+              </div>
+
+            ) : (
+              <>
+                {/* Main photo */}
+                <div className="relative rounded-xl overflow-hidden bg-muted aspect-video border border-border/40 shadow-sm">
+                  <img
+                    src={rmImages[imageIdx]?.url}
+                    alt={rmImages[imageIdx]?.caption ?? "Property photo"}
+                    className="w-full h-full object-cover"
+                  />
+                  {rmImages.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => setImageIdx(i => Math.max(0, i - 1))}
+                        disabled={imageIdx === 0}
+                        className="absolute left-1.5 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-black/60 text-white flex items-center justify-center disabled:opacity-20 hover:bg-black/80 transition-colors"
+                      ><ChevronLeft className="h-4 w-4" /></button>
+                      <button
+                        onClick={() => setImageIdx(i => Math.min(rmImages.length - 1, i + 1))}
+                        disabled={imageIdx === rmImages.length - 1}
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-black/60 text-white flex items-center justify-center disabled:opacity-20 hover:bg-black/80 transition-colors"
+                      ><ChevronRight className="h-4 w-4" /></button>
+                      <div className="absolute bottom-1.5 right-1.5 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+                        {imageIdx + 1} / {rmImages.length}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Thumbnails */}
+                {rmImages.length > 1 && (
+                  <div className="grid grid-cols-4 gap-1">
+                    {rmImages.slice(0, 8).map((img, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setImageIdx(i)}
+                        className={`aspect-square rounded-md overflow-hidden ring-2 ring-offset-1 transition-all ${i === imageIdx ? "ring-primary" : "ring-transparent opacity-70 hover:opacity-100"}`}
+                      >
+                        <img src={img.url} alt="" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {rmImages[imageIdx]?.caption && (
+                  <p className="text-[11px] text-muted-foreground text-center px-1">{rmImages[imageIdx].caption}</p>
+                )}
+              </>
+            )}
+
+            {/* Floor plan */}
+            {rmFloorplans.length > 0 && (
+              <>
+                <Separator />
+                <h3 className="text-sm font-semibold text-foreground">Floor Plan</h3>
+                <div className="rounded-xl overflow-hidden border border-border/40 bg-white shadow-sm">
+                  <img
+                    src={rmFloorplans[fpIdx]?.url}
+                    alt="Floor plan"
+                    className="w-full object-contain"
+                  />
+                </div>
+                {rmFloorplans.length > 1 && (
+                  <div className="flex justify-center gap-1.5">
+                    {rmFloorplans.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setFpIdx(i)}
+                        className={`h-1.5 w-1.5 rounded-full transition-all ${i === fpIdx ? "bg-primary" : "bg-muted-foreground/30"}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+          </div>
+        </div>{/* end right sidebar */}
+
+      </div>{/* end two-column flex */}
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>

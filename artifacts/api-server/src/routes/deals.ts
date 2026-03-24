@@ -93,4 +93,68 @@ router.delete("/deals/:id", async (req, res) => {
   }
 });
 
+// ─── Rightmove image proxy ────────────────────────────────────────────────────
+router.get("/rightmove-images", async (req, res) => {
+  const url = typeof req.query.url === "string" ? req.query.url : "";
+  if (!url || !url.includes("rightmove.co.uk")) {
+    return res.status(400).json({ error: "Invalid URL", images: [], floorplans: [] });
+  }
+  try {
+    const resp = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-GB,en;q=0.9",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+      },
+    });
+
+    if (!resp.ok) {
+      return res.json({ images: [], floorplans: [], error: `HTTP ${resp.status}` });
+    }
+
+    const html = await resp.text();
+
+    // Extract the PAGE_MODEL JSON using bracket-counting (handles deeply nested objects)
+    const startStr = "window.PAGE_MODEL = ";
+    const startIdx = html.indexOf(startStr);
+    if (startIdx === -1) return res.json({ images: [], floorplans: [] });
+
+    let jsonStart = html.indexOf("{", startIdx + startStr.length);
+    if (jsonStart === -1) return res.json({ images: [], floorplans: [] });
+
+    let depth = 0, inStr = false, esc = false, jsonEnd = -1;
+    for (let i = jsonStart; i < html.length; i++) {
+      const c = html[i];
+      if (esc) { esc = false; continue; }
+      if (c === "\\" && inStr) { esc = true; continue; }
+      if (c === '"') { inStr = !inStr; continue; }
+      if (inStr) continue;
+      if (c === "{") depth++;
+      else if (c === "}") { depth--; if (depth === 0) { jsonEnd = i; break; } }
+    }
+
+    if (jsonEnd === -1) return res.json({ images: [], floorplans: [] });
+
+    const pageModel = JSON.parse(html.slice(jsonStart, jsonEnd + 1));
+    const pd = pageModel.propertyData ?? pageModel;
+
+    const images = ((pd.images ?? []) as any[]).map((img: any) => ({
+      url: img.url ?? img.srcUrl ?? img.src ?? "",
+      caption: img.caption ?? img.altText ?? "",
+    })).filter((i: any) => i.url);
+
+    const floorplans = ((pd.floorplans ?? pd.floorplanImages ?? []) as any[]).map((fp: any) => ({
+      url: fp.url ?? fp.srcUrl ?? fp.src ?? "",
+      caption: fp.caption ?? fp.altText ?? "",
+    })).filter((f: any) => f.url);
+
+    res.json({ images, floorplans });
+  } catch (err) {
+    console.error("Rightmove proxy error:", err);
+    res.json({ images: [], floorplans: [] });
+  }
+});
+
 export default router;
