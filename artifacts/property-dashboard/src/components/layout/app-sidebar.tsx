@@ -8,7 +8,8 @@ import {
   Hammer,
   PoundSterling,
   LogOut,
-  MapPin
+  MapPin,
+  Target
 } from "lucide-react";
 import {
   Sidebar,
@@ -32,6 +33,7 @@ const mainNavItems = [
   { title: "Rent Accounts", url: "/rent", icon: PoundSterling },
   { title: "Maintenance", url: "/maintenance", icon: Wrench },
   { title: "Refurb Tracker", url: "/refurb", icon: Hammer },
+  { title: "Deal Tracker", url: "/deals", icon: Target },
 ];
 
 const overviewSubItems = [

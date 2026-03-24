@@ -5,3 +5,4 @@ export * from "./refurb";
 export * from "./valuations";
 export * from "./rent";
 export * from "./tradespeople";
+export * from "./deals";
