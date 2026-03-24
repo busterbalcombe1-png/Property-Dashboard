@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAuth } from "@/contexts/auth-context";
 import { format, differenceInMonths, differenceInYears } from "date-fns";
@@ -46,6 +46,33 @@ type PropDetail = {
 type Valuation = {
   id: number; propertyId: number; valuationDate: string;
   value: number; source: string; notes?: string; createdAt: string;
+};
+
+type Tradesperson = {
+  id: number; propertyId: number; tradeType: string; name: string;
+  company?: string; phone?: string; email?: string; notes?: string; createdAt: string;
+};
+
+const TRADE_TYPES = [
+  "Boiler Engineer", "Builder", "Carpenter", "Electrician", "Gardener",
+  "Gas Engineer", "Handyman", "Locksmith", "Painter & Decorator",
+  "Plumber", "Roofer", "Window Cleaner", "Other",
+];
+
+const TRADE_COLORS: Record<string, string> = {
+  "Boiler Engineer":    "bg-orange-500/10 text-orange-600 border-orange-500/20",
+  "Builder":            "bg-stone-500/10 text-stone-600 border-stone-500/20",
+  "Carpenter":          "bg-amber-500/10 text-amber-700 border-amber-500/20",
+  "Electrician":        "bg-yellow-500/10 text-yellow-700 border-yellow-500/20",
+  "Gardener":           "bg-green-500/10 text-green-700 border-green-500/20",
+  "Gas Engineer":       "bg-red-500/10 text-red-600 border-red-500/20",
+  "Handyman":           "bg-blue-500/10 text-blue-600 border-blue-500/20",
+  "Locksmith":          "bg-slate-500/10 text-slate-600 border-slate-500/20",
+  "Painter & Decorator":"bg-purple-500/10 text-purple-600 border-purple-500/20",
+  "Plumber":            "bg-cyan-500/10 text-cyan-700 border-cyan-500/20",
+  "Roofer":             "bg-indigo-500/10 text-indigo-600 border-indigo-500/20",
+  "Window Cleaner":     "bg-sky-500/10 text-sky-600 border-sky-500/20",
+  "Other":              "bg-muted text-muted-foreground border-border",
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -177,6 +204,46 @@ export default function PropertyDetail() {
   const deleteValuation = async (vid: number) => {
     await fetch(`/api/properties/${propertyId}/valuations/${vid}`, { method: "DELETE" });
     setValuations(prev => (prev ?? []).filter(v => v.id !== vid));
+  };
+
+  const [tradespeople, setTradespeople] = useState<Tradesperson[] | null>(null);
+  const [tradespeopleLoading, setTradespeopleLoading] = useState(false);
+  const [showAddTrade, setShowAddTrade] = useState(false);
+  const [newTrade, setNewTrade] = useState({ tradeType: "Plumber", name: "", company: "", phone: "", email: "", notes: "" });
+
+  useEffect(() => {
+    if (!propertyId) return;
+    setTradespeopleLoading(true);
+    fetch(`/api/properties/${propertyId}/tradespeople`)
+      .then(r => r.json())
+      .then(data => setTradespeople(data))
+      .finally(() => setTradespeopleLoading(false));
+  }, [propertyId]);
+
+  const addTradesperson = async () => {
+    if (!newTrade.name.trim()) return;
+    const res = await fetch(`/api/properties/${propertyId}/tradespeople`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tradeType: newTrade.tradeType,
+        name:      newTrade.name,
+        company:   newTrade.company  || undefined,
+        phone:     newTrade.phone    || undefined,
+        email:     newTrade.email    || undefined,
+        notes:     newTrade.notes    || undefined,
+      }),
+    });
+    const data = await res.json();
+    setTradespeople(prev => [...(prev ?? []), data].sort((a, b) => a.tradeType.localeCompare(b.tradeType)));
+    setShowAddTrade(false);
+    setNewTrade({ tradeType: "Plumber", name: "", company: "", phone: "", email: "", notes: "" });
+    toast({ title: "Tradesperson added" });
+  };
+
+  const deleteTradesperson = async (tid: number) => {
+    await fetch(`/api/properties/${propertyId}/tradespeople/${tid}`, { method: "DELETE" });
+    setTradespeople(prev => (prev ?? []).filter(t => t.id !== tid));
   };
 
   if (isLoading) {
@@ -675,6 +742,125 @@ export default function PropertyDetail() {
                 </Field>
               </CardContent>
             </Card>
+
+            {/* Tradespeople */}
+            <Card className="border-border/50 shadow-sm">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Wrench className="h-4 w-4 text-muted-foreground" />Tradespeople
+                  </CardTitle>
+                  {!isReadOnly && (
+                    <Button size="sm" variant="ghost" className="h-7 px-2 text-xs gap-1"
+                      onClick={() => setShowAddTrade(v => !v)}>
+                      <Plus className="h-3.5 w-3.5" />{showAddTrade ? "Cancel" : "Add"}
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+
+                {/* Add form */}
+                {showAddTrade && (
+                  <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Trade Type</Label>
+                      <select
+                        className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        value={newTrade.tradeType}
+                        onChange={e => setNewTrade(p => ({ ...p, tradeType: e.target.value }))}>
+                        {TRADE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Name *</Label>
+                      <Input className="h-8 text-sm" placeholder="Full name" value={newTrade.name}
+                        onChange={e => setNewTrade(p => ({ ...p, name: e.target.value }))} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Company</Label>
+                      <Input className="h-8 text-sm" placeholder="Optional" value={newTrade.company}
+                        onChange={e => setNewTrade(p => ({ ...p, company: e.target.value }))} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Phone</Label>
+                        <Input className="h-8 text-sm" placeholder="Optional" value={newTrade.phone}
+                          onChange={e => setNewTrade(p => ({ ...p, phone: e.target.value }))} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Email</Label>
+                        <Input className="h-8 text-sm" type="email" placeholder="Optional" value={newTrade.email}
+                          onChange={e => setNewTrade(p => ({ ...p, email: e.target.value }))} />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Notes</Label>
+                      <Input className="h-8 text-sm" placeholder="Optional" value={newTrade.notes}
+                        onChange={e => setNewTrade(p => ({ ...p, notes: e.target.value }))} />
+                    </div>
+                    <Button size="sm" className="w-full h-8 text-xs" onClick={addTradesperson}
+                      disabled={!newTrade.name.trim()}>
+                      Save Tradesperson
+                    </Button>
+                  </div>
+                )}
+
+                {/* List */}
+                {tradespeopleLoading ? (
+                  <div className="space-y-2">
+                    {[1,2].map(i => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}
+                  </div>
+                ) : tradespeople && tradespeople.length > 0 ? (
+                  <div className="space-y-2">
+                    {tradespeople.map(t => (
+                      <div key={t.id} className="rounded-lg border border-border/50 bg-card p-3 space-y-1.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge variant="outline" className={`text-xs shrink-0 ${TRADE_COLORS[t.tradeType] ?? TRADE_COLORS["Other"]}`}>
+                                {t.tradeType}
+                              </Badge>
+                              <span className="text-sm font-medium truncate">{t.name}</span>
+                            </div>
+                            {t.company && (
+                              <p className="text-xs text-muted-foreground mt-0.5">{t.company}</p>
+                            )}
+                            <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+                              {t.phone && (
+                                <a href={`tel:${t.phone}`} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                                  <Phone className="h-3 w-3" />{t.phone}
+                                </a>
+                              )}
+                              {t.email && (
+                                <a href={`mailto:${t.email}`} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                                  <Mail className="h-3 w-3" />{t.email}
+                                </a>
+                              )}
+                            </div>
+                            {t.notes && (
+                              <p className="text-xs text-muted-foreground mt-0.5 italic">{t.notes}</p>
+                            )}
+                          </div>
+                          {!isReadOnly && (
+                            <button onClick={() => deleteTradesperson(t.id)}
+                              className="text-muted-foreground hover:text-destructive transition-colors shrink-0 mt-0.5">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center py-6 text-muted-foreground gap-2">
+                    <Wrench className="h-7 w-7 opacity-20" />
+                    <p className="text-xs text-center">No tradespeople saved yet.{!isReadOnly && " Click Add to get started."}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
           </div>
         </div>
       </div>

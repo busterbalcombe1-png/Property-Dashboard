@@ -8,6 +8,7 @@ import statsRouter from "./stats";
 import valuationsRouter from "./valuations";
 import uploadRouter from "./upload";
 import rentRouter from "./rent";
+import tradespeopleRouter from "./tradespeople";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(statsRouter);
 router.use(valuationsRouter);
 router.use(uploadRouter);
 router.use(rentRouter);
+router.use(tradespeopleRouter);
 
 export default router;
