@@ -1,9 +1,9 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import app from '../artifacts/api-server/src/app';
+import type { IncomingMessage, ServerResponse } from 'http';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default function handler(req: IncomingMessage, res: ServerResponse) {
   return new Promise((resolve, reject) => {
-    app(req as any, res as any, (err: any) => {
+    app.handle(req, res, (err: unknown) => {
       if (err) reject(err);
       else resolve(undefined);
     });
