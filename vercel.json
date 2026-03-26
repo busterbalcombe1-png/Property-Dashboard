@@ -5,10 +5,12 @@
   "outputDirectory": "artifacts/property-dashboard/dist/public",
   "functions": {
     "api/index.ts": {
-      "includeFiles": "lib/**"
-    }
+      "includeFiles": "lib/**,artifacts/api-server/src/**"
+    },
+    "api/test.ts": {}
   },
   "rewrites": [
+    { "source": "/api/diag", "destination": "/api/test" },
     { "source": "/api/:path*", "destination": "/api/index" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
