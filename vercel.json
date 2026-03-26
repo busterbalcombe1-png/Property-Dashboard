@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "PORT=3000 BASE_PATH=/ pnpm --filter property-dashboard run build",
+  "buildCommand": "pnpm install && pnpm --filter @workspace/property-dashboard run build",
   "outputDirectory": "artifacts/property-dashboard/dist/public",
   "functions": {
     "api/index.ts": {
@@ -8,7 +8,7 @@
     }
   },
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index.ts" },
+    { "source": "/api/:path*", "destination": "/api/index" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
