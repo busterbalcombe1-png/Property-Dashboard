@@ -7,7 +7,9 @@
     "api/index.ts": {
       "includeFiles": "lib/**,artifacts/api-server/src/**"
     },
-    "api/test.ts": {}
+    "api/test.ts": {
+      "includeFiles": "lib/**"
+    }
   },
   "rewrites": [
     { "source": "/api/diag", "destination": "/api/test" },
