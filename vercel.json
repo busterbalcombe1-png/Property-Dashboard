@@ -1,6 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "pnpm install && pnpm --filter @workspace/property-dashboard run build",
+  "installCommand": "pnpm install",
+  "buildCommand": "pnpm --filter @workspace/property-dashboard run build",
   "outputDirectory": "artifacts/property-dashboard/dist/public",
   "functions": {
     "api/index.ts": {
