@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "framework": null,
   "installCommand": "pnpm install",
   "buildCommand": "pnpm --filter @workspace/property-dashboard run build",
   "outputDirectory": "artifacts/property-dashboard/dist/public",
