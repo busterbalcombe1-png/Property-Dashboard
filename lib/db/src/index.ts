@@ -22,14 +22,24 @@ function parsePgUrl(url: string) {
   const password = decodeURIComponent(userInfo.slice(colonInUser + 1));
   const slashInHost = hostInfo.indexOf("/");
   const hostPort = hostInfo.slice(0, slashInHost);
-  const database = hostInfo.slice(slashInHost + 1).split("?")[0];
+  const rest = hostInfo.slice(slashInHost + 1);
+  const database = rest.split("?")[0];
+  const query = rest.includes("?") ? rest.slice(rest.indexOf("?") + 1) : "";
+  const params = new URLSearchParams(query);
+  const sslmode = params.get("sslmode");
   const colonInHost = hostPort.lastIndexOf(":");
-  const host = hostPort.slice(0, colonInHost);
-  const port = parseInt(hostPort.slice(colonInHost + 1)) || 5432;
-  return { user, password, host, port, database };
+  const host = colonInHost === -1 ? hostPort : hostPort.slice(0, colonInHost);
+  const port = colonInHost === -1 ? 5432 : parseInt(hostPort.slice(colonInHost + 1)) || 5432;
+  return { user, password, host, port, database, sslmode };
 }
 
-const { user, password, host, port, database } = parsePgUrl(rawUrl);
+const { user, password, host, port, database, sslmode } = parsePgUrl(rawUrl);
+
+// Respect sslmode from the URL — local/dev databases (sslmode=disable) don't need SSL
+const ssl =
+  sslmode === "disable" || sslmode === "allow"
+    ? false
+    : { rejectUnauthorized: false };
 
 export const pool = new Pool({
   host,
@@ -37,7 +47,7 @@ export const pool = new Pool({
   user,
   password,
   database,
-  ssl: { rejectUnauthorized: false },
+  ssl,
 });
 
 export const db = drizzle(pool, { schema });

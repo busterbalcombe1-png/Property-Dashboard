@@ -16,7 +16,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
   - Useful links (Rightmove, Zoopla, Land Registry)
   - Key contacts (letting agent, solicitor, insurance provider)
 - **API**: Express server at `/api`, photo uploads at `/api/uploads/`
-- **Database**: PostgreSQL (Supabase) via Drizzle ORM
+- **Database**: PostgreSQL (Replit built-in) via Drizzle ORM
 
 ## Stack
 
@@ -25,7 +25,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
 - **API framework**: Express 5
-- **Database**: Supabase PostgreSQL (pooler session mode) + Drizzle ORM
+- **Database**: Replit built-in PostgreSQL + Drizzle ORM
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
