@@ -30,6 +30,18 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
 
+## Deployment
+
+- **Vercel (production)**: `https://property-portfolio-dashboard.vercel.app`
+  - Deployed via Vercel CLI (`vercel deploy --prod --archive=tgz`)
+  - `vercel.json` — config: `framework: null`, builds API server + frontend, routes `/api/*` to serverless function
+  - `api/index.ts` — serverless handler; imports pre-built `artifacts/api-server/dist/handler.cjs` (avoids workspace TS resolution issues)
+  - `artifacts/api-server/src/vercel-handler.ts` — thin entry point that exports just the Express app for the Vercel bundle
+  - Build produces two bundles: `dist/index.cjs` (Replit production) and `dist/handler.cjs` (Vercel serverless)
+  - `DATABASE_URL` env var must be set in Vercel project settings (Supabase pooler URL)
+  - Photo uploads are disabled on Vercel (serverless has read-only filesystem); use Supabase Storage for persistent uploads
+  - `.vercelignore` excludes `node_modules`, `.git`, `.local`, `.cache`, `dist`, `uploads`
+
 ## Structure
 
 ```text

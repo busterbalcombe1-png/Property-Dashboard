@@ -6,8 +6,12 @@ import { db, propertiesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
 const uploadsDir = path.join(process.cwd(), "artifacts/api-server/uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+try {
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+} catch {
+  // Serverless environments have a read-only filesystem — uploads won't persist
 }
 
 const storage = multer.diskStorage({

@@ -2,11 +2,11 @@
   "version": 2,
   "framework": null,
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm --filter @workspace/property-dashboard run build",
+  "buildCommand": "pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/property-dashboard run build",
   "outputDirectory": "artifacts/property-dashboard/dist/public",
   "functions": {
     "api/index.ts": {
-      "includeFiles": "lib/**,artifacts/api-server/src/**"
+      "includeFiles": "artifacts/api-server/dist/handler.cjs"
     },
     "api/test.ts": {
       "includeFiles": "lib/**"

@@ -1,5 +1,7 @@
 node_modules
 .git
+.local
+.cache
 attached_assets
 artifacts/property-dashboard/dist
 artifacts/api-server/uploads

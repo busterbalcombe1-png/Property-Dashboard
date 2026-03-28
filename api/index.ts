@@ -7,8 +7,9 @@ async function loadApp() {
   if (appModule) return appModule;
   if (loadError) throw new Error(loadError);
   try {
-    const mod = await import('../artifacts/api-server/src/app.js');
-    appModule = mod.default;
+    const mod = await import('../artifacts/api-server/dist/handler.cjs');
+    // CJS bundles with ESM exports get double-wrapped: mod.default may be {default: app}
+    appModule = typeof mod.default === 'function' ? mod.default : (mod.default?.default ?? mod.default);
     return appModule;
   } catch (err: unknown) {
     loadError = err instanceof Error ? `${err.message}\n${err.stack}` : String(err);
