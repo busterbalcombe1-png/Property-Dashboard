@@ -98,6 +98,9 @@ function buildInsert(body: Record<string, unknown>) {
     solicitorPhone: (body.solicitorPhone as string) || null,
     insuranceProvider: (body.insuranceProvider as string) || null,
     insuranceRenewalDate: (body.insuranceRenewalDate as string) || null,
+    epcExpiryDate: (body.epcExpiryDate as string) || null,
+    eicrExpiryDate: (body.eicrExpiryDate as string) || null,
+    gasSafetyExpiryDate: (body.gasSafetyExpiryDate as string) || null,
     notes: (body.notes as string) || null,
   };
 }
@@ -137,6 +140,9 @@ function formatProperty(row: typeof propertiesTable.$inferSelect) {
     solicitorPhone: row.solicitorPhone ?? undefined,
     insuranceProvider: row.insuranceProvider ?? undefined,
     insuranceRenewalDate: row.insuranceRenewalDate ?? undefined,
+    epcExpiryDate: row.epcExpiryDate ?? undefined,
+    eicrExpiryDate: row.eicrExpiryDate ?? undefined,
+    gasSafetyExpiryDate: row.gasSafetyExpiryDate ?? undefined,
     notes: row.notes ?? undefined,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),

@@ -5,7 +5,7 @@ import { format, differenceInMonths, differenceInYears } from "date-fns";
 import {
   ArrowLeft, Upload, Home, ExternalLink, Edit2, Save, X, Plus, Trash2,
   Building2, Key, Shield, Users, Wrench, TrendingUp, PoundSterling,
-  Phone, Mail, Calendar, Info, Link, Camera
+  Phone, Mail, Calendar, Info, Link, Camera, FileCheck2, AlertTriangle
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getListPropertiesQueryKey } from "@workspace/api-client-react";
@@ -49,7 +49,9 @@ type PropDetail = {
   photoUrl?: string; rightmoveUrl?: string; zooplaUrl?: string; landRegistryUrl?: string;
   lettingAgent?: string; lettingAgentPhone?: string; lettingAgentEmail?: string; lettingAgentFee?: number;
   solicitor?: string; solicitorPhone?: string; insuranceProvider?: string;
-  insuranceRenewalDate?: string; notes?: string; createdAt: string; updatedAt: string;
+  insuranceRenewalDate?: string;
+  epcExpiryDate?: string; eicrExpiryDate?: string; gasSafetyExpiryDate?: string;
+  notes?: string; createdAt: string; updatedAt: string;
 };
 
 type Valuation = {
@@ -747,6 +749,48 @@ export default function PropertyDetail() {
                     );
                   })()}
                 </Field>
+              </CardContent>
+            </Card>
+
+            {/* Compliance Certificates */}
+            <Card className="border-border/50 shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <FileCheck2 className="h-4 w-4 text-muted-foreground" />Compliance Certificates
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {(() => {
+                  const certs = [
+                    { key: "epcExpiryDate" as const, label: "EPC Expiry" },
+                    { key: "eicrExpiryDate" as const, label: "EICR Expiry" },
+                    { key: "gasSafetyExpiryDate" as const, label: "Gas Safety Expiry" },
+                  ];
+                  return certs.map(({ key, label }) => {
+                    const val = p[key] as string | undefined;
+                    const certDate = safeDate(val);
+                    const monthsUntil = certDate ? differenceInMonths(certDate, new Date()) : null;
+                    const isExpired = monthsUntil !== null && monthsUntil < 0;
+                    const isExpiringSoon = monthsUntil !== null && monthsUntil >= 0 && monthsUntil < 2;
+                    return (
+                      <Field key={key} label={label}>
+                        {isEditing ? (
+                          EF(key, "date")
+                        ) : (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-medium">{certDate ? format(certDate, "d MMM yyyy") : val ? <span className="text-amber-600 flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5" />{val}</span> : "—"}</span>
+                            {isExpired && (
+                              <Badge className="bg-rose-500/10 text-rose-600 border-rose-500/20 text-xs">Expired</Badge>
+                            )}
+                            {isExpiringSoon && (
+                              <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs">Expiring soon</Badge>
+                            )}
+                          </div>
+                        )}
+                      </Field>
+                    );
+                  });
+                })()}
               </CardContent>
             </Card>
 

@@ -39,6 +39,10 @@ export const propertiesTable = pgTable("properties", {
   solicitorPhone: text("solicitor_phone"),
   insuranceProvider: text("insurance_provider"),
   insuranceRenewalDate: text("insurance_renewal_date"),
+  // Compliance certificates
+  epcExpiryDate: text("epc_expiry_date"),
+  eicrExpiryDate: text("eicr_expiry_date"),
+  gasSafetyExpiryDate: text("gas_safety_expiry_date"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
