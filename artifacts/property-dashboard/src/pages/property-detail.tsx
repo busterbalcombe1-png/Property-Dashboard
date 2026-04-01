@@ -30,6 +30,15 @@ const fmt = (val?: number) =>
   val == null ? "—" : new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(val);
 const fmtPct = (val?: number) =>
   val == null ? "—" : `${val.toFixed(2)}%`;
+const safeDate = (val?: string | null): Date | null => {
+  if (!val) return null;
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? null : d;
+};
+const fmtDate = (val?: string | null, formatStr = "d MMM yyyy"): string => {
+  const d = safeDate(val);
+  return d ? format(d, formatStr) : "—";
+};
 
 type PropDetail = {
   id: number; address: string; propertyType: string; bedrooms: number; bathrooms?: number;
@@ -279,7 +288,7 @@ export default function PropertyDetail() {
   const mortgageBalance = p.mortgageBalance ?? 0;
   const equity = p.currentValue - mortgageBalance;
   const ltv = mortgageBalance > 0 ? (mortgageBalance / p.currentValue) * 100 : 0;
-  const purchaseDate = p.purchaseDate ? new Date(p.purchaseDate) : null;
+  const purchaseDate = safeDate(p.purchaseDate);
   const yearsHeld = purchaseDate ? differenceInYears(new Date(), purchaseDate) : 0;
   const monthsHeld = purchaseDate ? differenceInMonths(new Date(), purchaseDate) % 12 : 0;
 
@@ -342,7 +351,7 @@ export default function PropertyDetail() {
             </div>
             <p className="text-muted-foreground text-sm">
               {p.propertyType} · {p.bedrooms} bed{p.bathrooms ? ` · ${p.bathrooms} bath` : ""}
-              {purchaseDate && ` · Purchased ${format(purchaseDate, "MMM yyyy")}`}
+              {purchaseDate && ` · Purchased ${format(purchaseDate, "MMM yyyy")}`}{/* purchaseDate already validated via safeDate */}
               {(yearsHeld > 0 || monthsHeld > 0) && ` (${yearsHeld > 0 ? `${yearsHeld}y ` : ""}${monthsHeld}m ago)`}
             </p>
           </div>
@@ -386,7 +395,7 @@ export default function PropertyDetail() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {[
             { label: "Current Value", value: fmt(p.currentValue), sub: `${capitalGain >= 0 ? "+" : ""}${fmt(capitalGain)}`, pos: capitalGain >= 0 },
-            { label: "Purchase Price", value: fmt(p.purchasePrice), sub: p.purchaseDate ? format(new Date(p.purchaseDate), "d MMM yyyy") : undefined },
+            { label: "Purchase Price", value: fmt(p.purchasePrice), sub: fmtDate(p.purchaseDate) === "—" ? undefined : fmtDate(p.purchaseDate) },
             { label: "Equity", value: fmt(equity), sub: mortgageBalance > 0 ? `LTV ${ltv.toFixed(0)}%` : "No mortgage tracked" },
             { label: "Monthly Cashflow", value: fmt(cashflow), sub: `${fmt(cashflow * 12)}/yr`, pos: cashflow >= 0 },
             { label: "Gross Yield", value: fmtPct(grossYield), sub: `Net ${fmtPct(netYield)}` },
@@ -445,7 +454,7 @@ export default function PropertyDetail() {
                       </Select>
                     ) : <StatusBadge status={p.status} />}
                   </Field>
-                  <Field label="Purchase Date">{isEditing ? EF("purchaseDate", "date") : <span className="text-sm font-medium">{p.purchaseDate ? format(new Date(p.purchaseDate), "d MMM yyyy") : "—"}</span>}</Field>
+                  <Field label="Purchase Date">{isEditing ? EF("purchaseDate", "date") : <span className="text-sm font-medium">{fmtDate(p.purchaseDate)}</span>}</Field>
                 </div>
               </CardContent>
             </Card>
@@ -516,16 +525,18 @@ export default function PropertyDetail() {
                     {isEditing ? EF("mortgageRate", "number") : <span className="text-sm font-medium">{p.mortgageRate != null ? `${p.mortgageRate}%` : "—"}</span>}
                   </Field>
                   <Field label="Term (years)">{isEditing ? EF("mortgageTermYears", "number") : RV("mortgageTermYears")}</Field>
-                  <Field label="Fix End Date">{isEditing ? EF("mortgageFixEndDate", "date") : <span className="text-sm font-medium">{p.mortgageFixEndDate ? format(new Date(p.mortgageFixEndDate), "d MMM yyyy") : "—"}</span>}</Field>
+                  <Field label="Fix End Date">{isEditing ? EF("mortgageFixEndDate", "date") : <span className="text-sm font-medium">{fmtDate(p.mortgageFixEndDate)}</span>}</Field>
                   <Field label="Outstanding Balance">{isEditing ? EF("mortgageBalance", "number") : <span className="text-sm font-medium">{fmt(p.mortgageBalance)}</span>}</Field>
                 </div>
-                {p.mortgageFixEndDate && (() => {
-                  const months = differenceInMonths(new Date(p.mortgageFixEndDate), new Date());
+                {(() => {
+                  const fixDate = safeDate(p.mortgageFixEndDate);
+                  if (!fixDate) return null;
+                  const months = differenceInMonths(fixDate, new Date());
                   if (months >= 0 && months <= 3) return (
                     <div className="mt-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg p-3 flex items-center gap-3">
                       <Calendar className="h-4 w-4 text-amber-600 shrink-0" />
                       <p className="text-sm text-amber-700 dark:text-amber-500">
-                        Fix period ends <strong>{format(new Date(p.mortgageFixEndDate), "d MMM yyyy")}</strong> — {months <= 0 ? "already expired!" : `in ${months} month${months !== 1 ? "s" : ""}.`} Review your rate soon.
+                        Fix period ends <strong>{format(fixDate, "d MMM yyyy")}</strong> — {months <= 0 ? "already expired!" : `in ${months} month${months !== 1 ? "s" : ""}.`} Review your rate soon.
                       </p>
                     </div>
                   );
@@ -605,7 +616,7 @@ export default function PropertyDetail() {
                               {v.notes && <span className="text-xs text-muted-foreground ml-2">· {v.notes}</span>}
                             </div>
                             <div className="flex items-center gap-3 ml-3 shrink-0">
-                              <span className="text-xs text-muted-foreground">{format(new Date(v.valuationDate), "d MMM yyyy")}</span>
+                              <span className="text-xs text-muted-foreground">{fmtDate(v.valuationDate)}</span>
                               <button onClick={() => deleteValuation(v.id)} className="text-muted-foreground/40 hover:text-rose-500 transition-colors">
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
@@ -722,15 +733,19 @@ export default function PropertyDetail() {
               <CardContent className="space-y-4">
                 <Field label="Provider">{isEditing ? EF("insuranceProvider") : RV("insuranceProvider")}</Field>
                 <Field label="Renewal Date">
-                  {isEditing ? EF("insuranceRenewalDate", "date") : p.insuranceRenewalDate ? (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium">{format(new Date(p.insuranceRenewalDate), "d MMM yyyy")}</span>
-                      {differenceInMonths(new Date(p.insuranceRenewalDate), new Date()) < 2 &&
-                       differenceInMonths(new Date(p.insuranceRenewalDate), new Date()) >= 0 && (
-                        <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs">Renewing soon</Badge>
-                      )}
-                    </div>
-                  ) : <span className="text-sm text-muted-foreground">—</span>}
+                  {isEditing ? EF("insuranceRenewalDate", "date") : (() => {
+                    const renewDate = safeDate(p.insuranceRenewalDate);
+                    if (!renewDate) return <span className="text-sm text-muted-foreground">—</span>;
+                    const monthsUntil = differenceInMonths(renewDate, new Date());
+                    return (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium">{format(renewDate, "d MMM yyyy")}</span>
+                        {monthsUntil < 2 && monthsUntil >= 0 && (
+                          <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs">Renewing soon</Badge>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </Field>
               </CardContent>
             </Card>
