@@ -103,7 +103,7 @@ async function geocodeAddress(address: string): Promise<[number, number] | null>
       new URLSearchParams({ q: address, countrycodes: "gb", format: "json", limit: "1" });
 
     const res = await fetch(url, {
-      headers: { "Accept-Language": "en", "User-Agent": "BlackRidge-PropertyGroup/1.0" },
+      headers: { "Accept-Language": "en", "User-Agent": "Blackridge-Property-Group/1.0" },
     });
     const data = await res.json();
     const result: [number, number] | null =

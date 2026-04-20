@@ -15,9 +15,8 @@ const AuthContext = createContext<AuthContextType | null>(null);
 const STORAGE_KEY = "propdash_auth";
 
 const CREDENTIALS: Record<string, { password: string; role: Role }> = {
-  admin:           { password: "propdash",    role: "admin" },
-  james:           { password: "propdash",    role: "admin" },
-  charlesbalcombe: { password: "A7@k3s9gs",   role: "viewer" },
+  buster:          { password: "Ccf561bb@7085", role: "admin" },
+  charlesbalcombe: { password: "A7@k3s9gs",     role: "viewer" },
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {

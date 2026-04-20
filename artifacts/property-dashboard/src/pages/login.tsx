@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/auth-context";
 
 const LOAD_DURATION = 3600;
-const CREDENTIALS: Record<string, string> = { admin: "propdash", james: "propdash", charlesbalcombe: "A7@k3s9gs" };
+const CREDENTIALS: Record<string, string> = { buster: "Ccf561bb@7085", charlesbalcombe: "A7@k3s9gs" };
 
 function LoadingScreen({ onComplete }: { onComplete: () => void }) {
   const [progress, setProgress] = useState(0);
@@ -136,9 +136,11 @@ export default function Login() {
         {/* Crest */}
         <div className="flex flex-col items-center mb-10">
           <div style={{ width: 64, height: 64, border: "2px solid #9d7c2e", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-            <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 600, color: "#9d7c2e", letterSpacing: 2, lineHeight: 1 }}>PD</span>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" style={{ width: 44, height: 44 }}>
+              <polyline points="2,52 16,26 25,37 32,12 40,33 50,21 62,46" stroke="#9d7c2e" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+            </svg>
           </div>
-          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 600, color: "#1a2744", letterSpacing: "0.05em", lineHeight: 1.1, textAlign: "center" }}>BlackRidge PropertyGroup</h1>
+          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 600, color: "#1a2744", letterSpacing: "0.05em", lineHeight: 1.1, textAlign: "center" }}>Blackridge Property Group</h1>
           <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 13, fontStyle: "italic", color: "#7a6a50", letterSpacing: "0.1em", marginTop: 4, textAlign: "center" }}>
             Private Portfolio Management
           </p>

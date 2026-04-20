@@ -76,13 +76,13 @@ export function AppSidebar() {
       <SidebarHeader className="flex h-16 items-center justify-center border-b border-sidebar-border/50 px-4 py-0">
         <div className="flex w-full items-center gap-3">
           <img 
-            src={`${import.meta.env.BASE_URL}images/logo.png`} 
+            src={`${import.meta.env.BASE_URL}images/logo.svg`} 
             alt="Logo" 
             className="h-8 w-8 rounded-md bg-white p-1"
           />
           <div className="flex flex-col overflow-hidden group-data-[collapsible=icon]:hidden">
-            <span className="truncate font-display font-bold leading-none text-sidebar-foreground">BlackRidge</span>
-            <span className="truncate text-[10px] text-sidebar-foreground/60">Portfolio Manager</span>
+            <span className="truncate font-display font-bold leading-none text-sidebar-foreground">Blackridge</span>
+            <span className="truncate text-[10px] text-sidebar-foreground/60">Property Group</span>
           </div>
         </div>
       </SidebarHeader>
