@@ -619,38 +619,102 @@ export default function PropertyDetail() {
                 <CardTitle className="text-base flex items-center gap-2"><Key className="h-4 w-4 text-muted-foreground" />Mortgage Details</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
-                  <Field label="Lender">{isEditing ? EF("mortgageLender") : RV("mortgageLender")}</Field>
-                  <Field label="Mortgage Type">
-                    {isEditing ? (
-                      <Select value={String(editData.mortgageType ?? property.mortgageType ?? "")} onValueChange={v => setField("mortgageType", v)}>
-                        <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select" /></SelectTrigger>
-                        <SelectContent>
-                          {["Repayment", "Interest Only", "Part & Part"].map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    ) : RV("mortgageType")}
-                  </Field>
-                  <Field label="Interest Rate (%)">
-                    {isEditing ? EF("mortgageRate", "number") : <span className="text-sm font-medium">{p.mortgageRate != null ? `${p.mortgageRate}%` : "—"}</span>}
-                  </Field>
-                  <Field label="Term (years)">{isEditing ? EF("mortgageTermYears", "number") : RV("mortgageTermYears")}</Field>
-                  <Field label="Fix End Date">{isEditing ? EF("mortgageFixEndDate", "date") : <span className="text-sm font-medium">{fmtDate(p.mortgageFixEndDate)}</span>}</Field>
-                  <Field label="Outstanding Balance">{isEditing ? EF("mortgageBalance", "number") : <span className="text-sm font-medium">{fmt(p.mortgageBalance)}</span>}</Field>
-                </div>
                 {(() => {
-                  const fixDate = safeDate(p.mortgageFixEndDate);
-                  if (!fixDate) return null;
-                  const months = differenceInMonths(fixDate, new Date());
-                  if (months >= 0 && months <= 3) return (
-                    <div className="mt-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg p-3 flex items-center gap-3">
-                      <Calendar className="h-4 w-4 text-amber-600 shrink-0" />
-                      <p className="text-sm text-amber-700 dark:text-amber-500">
-                        Fix period ends <strong>{format(fixDate, "d MMM yyyy")}</strong> — {months <= 0 ? "already expired!" : `in ${months} month${months !== 1 ? "s" : ""}.`} Review your rate soon.
-                      </p>
-                    </div>
+                  const activeMortgageType = String(editData.mortgageType ?? property.mortgageType ?? "");
+                  const noMortgage = activeMortgageType === "No Mortgage";
+
+                  return (
+                    <>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
+                        {/* Mortgage Type — always shown */}
+                        <Field label="Mortgage Type">
+                          {isEditing ? (
+                            <Select
+                              value={activeMortgageType}
+                              onValueChange={v => {
+                                setField("mortgageType", v);
+                                if (v === "No Mortgage") {
+                                  setField("mortgageFixEndDate", "");
+                                  setField("mortgageLender", "");
+                                  setField("mortgageRate", undefined);
+                                  setField("mortgageTermYears", undefined);
+                                  setField("mortgageBalance", undefined);
+                                  setField("monthlyMortgage", 0);
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="No Mortgage">No Mortgage</SelectItem>
+                                <SelectItem value="Repayment">Repayment</SelectItem>
+                                <SelectItem value="Interest Only">Interest Only</SelectItem>
+                                <SelectItem value="Part & Part">Part &amp; Part</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            noMortgage
+                              ? <Badge className="bg-slate-500/10 text-slate-600 border-slate-500/20 text-xs">No Mortgage</Badge>
+                              : RV("mortgageType")
+                          )}
+                        </Field>
+
+                        {/* Fields only relevant when there IS a mortgage */}
+                        {!noMortgage && (
+                          <>
+                            <Field label="Lender">{isEditing ? EF("mortgageLender") : RV("mortgageLender")}</Field>
+                            <Field label="Interest Rate (%)">
+                              {isEditing ? EF("mortgageRate", "number") : <span className="text-sm font-medium">{p.mortgageRate != null ? `${p.mortgageRate}%` : "—"}</span>}
+                            </Field>
+                            <Field label="Term (years)">{isEditing ? EF("mortgageTermYears", "number") : RV("mortgageTermYears")}</Field>
+                            <Field label="Fix End Date">
+                              {isEditing ? (
+                                <div className="flex items-center gap-1.5">
+                                  {EF("mortgageFixEndDate", "date")}
+                                  {(editData.mortgageFixEndDate ?? property.mortgageFixEndDate) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setField("mortgageFixEndDate", "")}
+                                      className="text-muted-foreground hover:text-rose-500 transition-colors shrink-0"
+                                      title="Clear fix end date"
+                                    >
+                                      <X className="h-3.5 w-3.5" />
+                                    </button>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-sm font-medium">{fmtDate(p.mortgageFixEndDate)}</span>
+                              )}
+                            </Field>
+                            <Field label="Outstanding Balance">{isEditing ? EF("mortgageBalance", "number") : <span className="text-sm font-medium">{fmt(p.mortgageBalance)}</span>}</Field>
+                          </>
+                        )}
+                      </div>
+
+                      {/* No mortgage note */}
+                      {noMortgage && (
+                        <div className="mt-4 bg-muted/40 border border-border/50 rounded-lg p-3 flex items-center gap-3">
+                          <Key className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <p className="text-sm text-muted-foreground">This property is owned outright — no mortgage is attached.</p>
+                        </div>
+                      )}
+
+                      {/* Fix period warning */}
+                      {!noMortgage && (() => {
+                        const fixDate = safeDate(p.mortgageFixEndDate);
+                        if (!fixDate) return null;
+                        const months = differenceInMonths(fixDate, new Date());
+                        if (months >= 0 && months <= 3) return (
+                          <div className="mt-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg p-3 flex items-center gap-3">
+                            <Calendar className="h-4 w-4 text-amber-600 shrink-0" />
+                            <p className="text-sm text-amber-700 dark:text-amber-500">
+                              Fix period ends <strong>{format(fixDate, "d MMM yyyy")}</strong> — {months <= 0 ? "already expired!" : `in ${months} month${months !== 1 ? "s" : ""}.`} Review your rate soon.
+                            </p>
+                          </div>
+                        );
+                        return null;
+                      })()}
+                    </>
                   );
-                  return null;
                 })()}
               </CardContent>
             </Card>
