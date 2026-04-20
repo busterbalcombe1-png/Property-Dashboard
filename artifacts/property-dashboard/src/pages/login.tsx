@@ -156,25 +156,25 @@ export default function Login() {
         {/* Form */}
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 12, letterSpacing: "0.15em", textTransform: "uppercase", color: "#4a3f2f" }}>
+            <label style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 12, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#2e2416" }}>
               Username
             </label>
             <input
               type="text" value={username} onChange={e => { setUsername(e.target.value); setError(false); }}
               autoComplete="username" required
-              style={{ background: "transparent", border: "none", borderBottom: `1px solid ${error ? "#8b2020" : "#9d7c2e"}`, padding: "8px 0", fontSize: 15, color: "#1a2744", fontFamily: "Inter, sans-serif", outline: "none", letterSpacing: "0.02em", transition: "border-color 0.2s" }}
+              style={{ background: "transparent", border: "none", borderBottom: `1px solid ${error ? "#8b2020" : "#9d7c2e"}`, padding: "8px 0", fontSize: 15, color: "#1a2744", fontFamily: "'Cormorant Garamond', serif", outline: "none", letterSpacing: "0.04em", transition: "border-color 0.2s" }}
               placeholder="Enter your username"
             />
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 12, letterSpacing: "0.15em", textTransform: "uppercase", color: "#4a3f2f" }}>
+            <label style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 12, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#2e2416" }}>
               Password
             </label>
             <input
               type="password" value={password} onChange={e => { setPassword(e.target.value); setError(false); }}
               autoComplete="current-password" required
-              style={{ background: "transparent", border: "none", borderBottom: `1px solid ${error ? "#8b2020" : "#9d7c2e"}`, padding: "8px 0", fontSize: 15, color: "#1a2744", fontFamily: "Inter, sans-serif", outline: "none", letterSpacing: "0.02em", transition: "border-color 0.2s" }}
+              style={{ background: "transparent", border: "none", borderBottom: `1px solid ${error ? "#8b2020" : "#9d7c2e"}`, padding: "8px 0", fontSize: 15, color: "#1a2744", fontFamily: "'Cormorant Garamond', serif", outline: "none", letterSpacing: "0.04em", transition: "border-color 0.2s" }}
               placeholder="Enter your password"
             />
           </div>
