@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { 
   Building2, 
   TrendingUp, 
@@ -7,7 +8,9 @@ import {
   ArrowDownRight,
   CalendarDays,
   AlertTriangle,
-  ChevronRight
+  ChevronRight,
+  Percent,
+  CalendarRange,
 } from "lucide-react";
 import { useGetStats } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
@@ -19,8 +22,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AppLayout } from "@/components/layout/app-layout";
 import type { CalendarEvent } from "./calendar";
 import {
-  AreaChart,
-  Area,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -107,6 +110,25 @@ export default function Dashboard() {
     queryKey: ["calendar-aggregate"],
     queryFn: () => fetch(`${API_BASE}/api/calendar/aggregate`).then(r => r.json()),
   });
+
+  const [appreciationRate, setAppreciationRate] = useState(5);
+  const [projectionYears, setProjectionYears] = useState(25);
+
+  const projectionData = useMemo(() => {
+    if (!stats) return [];
+    const currentYear = new Date().getFullYear();
+    const currentValue = stats.totalPortfolioValue;
+    const mortgageBalance = currentValue - stats.totalEquity;
+    return Array.from({ length: projectionYears + 1 }, (_, i) => {
+      const projectedValue = Math.round(currentValue * Math.pow(1 + appreciationRate / 100, i));
+      const projectedEquity = Math.max(0, projectedValue - mortgageBalance);
+      return {
+        year: `${currentYear + i}`,
+        value: projectedValue,
+        equity: projectedEquity,
+      };
+    });
+  }, [stats, appreciationRate, projectionYears]);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -213,52 +235,146 @@ export default function Dashboard() {
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* Portfolio Value History */}
+          {/* Portfolio Value Projection */}
           <Card className="lg:col-span-2 border-border/50 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg">Portfolio Value Growth</CardTitle>
+            <CardHeader className="pb-2">
+              <div className="flex flex-col gap-3">
+                <div>
+                  <CardTitle className="text-lg">Capital Appreciation Projection</CardTitle>
+                  <p className="text-xs text-muted-foreground mt-0.5">Forecast portfolio value and equity growth based on a target appreciation rate.</p>
+                </div>
+                {/* Controls */}
+                <div className="flex flex-wrap items-end gap-4 pt-1">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Annual Growth Rate</label>
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex items-center">
+                        <input
+                          type="number"
+                          min={0.1}
+                          max={30}
+                          step={0.1}
+                          value={appreciationRate}
+                          onChange={e => {
+                            const v = parseFloat(e.target.value);
+                            if (!isNaN(v) && v > 0 && v <= 30) setAppreciationRate(v);
+                          }}
+                          className="w-20 h-8 rounded-md border border-input bg-background px-2 pr-6 text-sm font-semibold text-right focus:outline-none focus:ring-2 focus:ring-ring"
+                        />
+                        <Percent className="absolute right-1.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                      </div>
+                      <input
+                        type="range"
+                        min={0.5}
+                        max={15}
+                        step={0.5}
+                        value={appreciationRate}
+                        onChange={e => setAppreciationRate(parseFloat(e.target.value))}
+                        className="w-28 accent-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Projection Period</label>
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex items-center">
+                        <input
+                          type="number"
+                          min={1}
+                          max={50}
+                          step={1}
+                          value={projectionYears}
+                          onChange={e => {
+                            const v = parseInt(e.target.value);
+                            if (!isNaN(v) && v >= 1 && v <= 50) setProjectionYears(v);
+                          }}
+                          className="w-20 h-8 rounded-md border border-input bg-background px-2 pr-8 text-sm font-semibold text-right focus:outline-none focus:ring-2 focus:ring-ring"
+                        />
+                        <span className="absolute right-2 text-xs text-muted-foreground pointer-events-none">yr</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={5}
+                        max={50}
+                        step={5}
+                        value={projectionYears}
+                        onChange={e => setProjectionYears(parseInt(e.target.value))}
+                        className="w-28 accent-blue-500"
+                      />
+                    </div>
+                  </div>
+                  {/* Summary callout */}
+                  {stats && projectionData.length > 0 && (
+                    <div className="ml-auto text-right">
+                      <p className="text-xs text-muted-foreground">In {projectionYears} years at {appreciationRate}%/yr</p>
+                      <p className="text-base font-bold text-blue-600">{formatCurrency(projectionData[projectionData.length - 1]?.value ?? 0)}</p>
+                      <p className="text-xs text-muted-foreground">Equity: {formatCurrency(projectionData[projectionData.length - 1]?.equity ?? 0)}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-2">
               {isLoading ? (
-                <Skeleton className="h-[300px] w-full" />
+                <Skeleton className="h-[260px] w-full" />
               ) : (
-                <div className="h-[300px] w-full mt-4">
+                <div className="h-[260px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={stats?.portfolioValueHistory || []} margin={{ top: 5, right: 0, left: 20, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
+                    <LineChart data={projectionData} margin={{ top: 5, right: 10, left: 20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                      <XAxis 
-                        dataKey="month" 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} 
-                        dy={10}
+                      <XAxis
+                        dataKey="year"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                        dy={8}
+                        interval={projectionYears <= 10 ? 0 : projectionYears <= 20 ? 1 : Math.floor(projectionYears / 10)}
                       />
-                      <YAxis 
-                        tickFormatter={(val) => `£${val/1000}k`} 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                      <YAxis
+                        tickFormatter={(val) => {
+                          if (val >= 1_000_000) return `£${(val / 1_000_000).toFixed(1)}m`;
+                          if (val >= 1_000) return `£${(val / 1_000).toFixed(0)}k`;
+                          return `£${val}`;
+                        }}
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                        width={60}
                       />
-                      <RechartsTooltip 
-                        formatter={(value: number) => formatCurrency(value)}
-                        contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
+                      <RechartsTooltip
+                        formatter={(value: number, name: string) => [
+                          formatCurrency(value),
+                          name === "value" ? "Portfolio Value" : "Equity",
+                        ]}
+                        labelFormatter={(label) => `Year ${label}`}
+                        contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', fontSize: 13 }}
                       />
-                      <Area 
-                        type="monotone" 
-                        dataKey="value" 
-                        name="Value"
-                        stroke="#3b82f6" 
-                        strokeWidth={3}
-                        fillOpacity={1} 
-                        fill="url(#colorValue)" 
+                      <Legend
+                        iconType="circle"
+                        wrapperStyle={{ paddingTop: 8, fontSize: 12 }}
+                        formatter={(val) => val === "value" ? "Portfolio Value" : "Equity"}
                       />
-                    </AreaChart>
+                      <Line
+                        type="monotone"
+                        dataKey="value"
+                        name="value"
+                        stroke="#3b82f6"
+                        strokeWidth={2.5}
+                        dot={false}
+                        activeDot={{ r: 5, fill: "#3b82f6" }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="equity"
+                        name="equity"
+                        stroke="#3b82f6"
+                        strokeWidth={1.5}
+                        strokeDasharray="5 4"
+                        strokeOpacity={0.4}
+                        dot={false}
+                        activeDot={{ r: 4, fill: "#3b82f6", fillOpacity: 0.5 }}
+                      />
+                    </LineChart>
                   </ResponsiveContainer>
                 </div>
               )}
