@@ -7,3 +7,4 @@ export * from "./rent.js";
 export * from "./tradespeople.js";
 export * from "./deals.js";
 export * from "./calendar.js";
+export * from "./operating-costs.js";

@@ -10,7 +10,8 @@ import {
   LogOut,
   MapPin,
   Target,
-  CalendarDays
+  CalendarDays,
+  Receipt
 } from "lucide-react";
 import {
   Sidebar,
@@ -33,6 +34,7 @@ const mainNavItems = [
   { title: "Properties", url: "/properties", icon: Building2 },
   { title: "Tenants", url: "/tenants", icon: Users },
   { title: "Rent Accounts", url: "/rent", icon: PoundSterling },
+  { title: "Operating Costs", url: "/operating-costs", icon: Receipt },
   { title: "Maintenance", url: "/maintenance", icon: Wrench },
   { title: "Refurb Tracker", url: "/refurb", icon: Hammer },
   { title: "Deal Tracker", url: "/deals", icon: Target },

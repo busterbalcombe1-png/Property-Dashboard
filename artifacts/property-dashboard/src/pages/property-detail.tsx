@@ -5,9 +5,10 @@ import { format, differenceInMonths, differenceInYears } from "date-fns";
 import {
   ArrowLeft, Upload, Home, ExternalLink, Edit2, Save, X, Plus, Trash2,
   Building2, Key, Shield, Users, Wrench, TrendingUp, PoundSterling,
-  Phone, Mail, Calendar, Info, Link, Camera, FileCheck2, AlertTriangle
+  Phone, Mail, Calendar, Info, Link, Camera, FileCheck2, AlertTriangle, ChevronDown
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getListPropertiesQueryKey } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
@@ -126,6 +127,27 @@ export default function PropertyDetail() {
   const { data: property, isLoading, refetch } = useQuery<PropDetail>({
     queryKey: ["property", propertyId],
     queryFn: () => fetch(`/api/properties/${propertyId}`).then(r => r.json()),
+    enabled: !!propertyId,
+  });
+
+  type ExpensesBreakdown = {
+    operatingCosts: { id: number; category: string; description?: string; amount: number; billingPeriod: string; monthlyEquivalent: number }[];
+    maintenanceCosts: { id: number; title: string; category: string; actualCost: number; status: string; reportedDate: string }[];
+    totalOperatingMonthly: number;
+    totalMaintenanceThisMonth: number;
+    totalExpenses: number;
+  };
+  type TenantSummary = { id: number; firstName: string; lastName: string; monthlyRent: number; status: string };
+
+  const { data: expensesBreakdown } = useQuery<ExpensesBreakdown>({
+    queryKey: ["expenses-breakdown", propertyId],
+    queryFn: () => fetch(`/api/properties/${propertyId}/expenses-breakdown`).then(r => r.json()),
+    enabled: !!propertyId,
+  });
+
+  const { data: propertyTenants = [] } = useQuery<TenantSummary[]>({
+    queryKey: ["tenants", "by-property", propertyId],
+    queryFn: () => fetch(`/api/tenants`).then(r => r.json()).then((ts: TenantSummary[]) => ts.filter(t => (t as any).propertyId === propertyId)),
     enabled: !!propertyId,
   });
 
@@ -282,8 +304,9 @@ export default function PropertyDetail() {
 
   const p: PropDetail = isEditing ? { ...property, ...editData } : property;
   const effectiveRent = p.tenantRentTotal > 0 ? p.tenantRentTotal : p.monthlyRent;
+  const effectiveExpenses = expensesBreakdown ? expensesBreakdown.totalExpenses : p.monthlyExpenses;
   const lettingAgentCost = p.lettingAgent && p.lettingAgentFee ? (effectiveRent * p.lettingAgentFee) / 100 : 0;
-  const cashflow = effectiveRent - p.monthlyMortgage - p.monthlyExpenses - lettingAgentCost;
+  const cashflow = effectiveRent - p.monthlyMortgage - effectiveExpenses - lettingAgentCost;
   const capitalGain = p.currentValue - p.purchasePrice;
   const capitalGainPct = (capitalGain / p.purchasePrice) * 100;
   const grossYield = (effectiveRent * 12 / p.currentValue) * 100;
@@ -480,13 +503,92 @@ export default function PropertyDetail() {
                 <Separator className="my-3" />
                 <div className={`grid gap-x-6 gap-y-4 ${p.lettingAgent ? "grid-cols-2 sm:grid-cols-5" : "grid-cols-2 sm:grid-cols-4"}`}>
                   <Field label="Monthly Rent">
-                    <span className="text-sm font-medium">{fmt(effectiveRent)}</span>
-                    {p.tenantRentTotal > 0 && (
-                      <span className="ml-1.5 text-xs text-muted-foreground">(from tenants)</span>
+                    {propertyTenants.length > 0 ? (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button className="flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors group">
+                            {fmt(effectiveRent)}
+                            <ChevronDown className="h-3 w-3 text-muted-foreground group-hover:text-primary transition-colors" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-72 p-4" align="start">
+                          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Tenant Rent Breakdown</p>
+                          <div className="space-y-2">
+                            {propertyTenants.map(t => (
+                              <div key={t.id} className="flex items-center justify-between text-sm">
+                                <span className="font-medium">{t.firstName} {t.lastName}</span>
+                                <span className="text-emerald-600 font-semibold">{fmt(t.monthlyRent)}/mo</span>
+                              </div>
+                            ))}
+                          </div>
+                          <Separator className="my-3" />
+                          <div className="flex items-center justify-between text-sm font-bold">
+                            <span>Total</span>
+                            <span>{fmt(effectiveRent)}/mo</span>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    ) : (
+                      <span className="text-sm font-medium">{fmt(effectiveRent)}</span>
                     )}
                   </Field>
                   <Field label="Monthly Mortgage">{isEditing ? EF("monthlyMortgage", "number") : <span className="text-sm font-medium">{fmt(p.monthlyMortgage)}</span>}</Field>
-                  <Field label="Other Expenses">{isEditing ? EF("monthlyExpenses", "number") : <span className="text-sm font-medium">{fmt(p.monthlyExpenses)}</span>}</Field>
+                  <Field label="Other Expenses">
+                    {expensesBreakdown && (expensesBreakdown.operatingCosts.length > 0 || expensesBreakdown.maintenanceCosts.length > 0) ? (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button className="flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors group">
+                            {fmt(effectiveExpenses)}
+                            <ChevronDown className="h-3 w-3 text-muted-foreground group-hover:text-primary transition-colors" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 p-4" align="start">
+                          {expensesBreakdown.operatingCosts.length > 0 && (
+                            <>
+                              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Operating Costs</p>
+                              <div className="space-y-1.5">
+                                {expensesBreakdown.operatingCosts.map(c => (
+                                  <div key={c.id} className="flex items-center justify-between text-sm">
+                                    <div className="min-w-0">
+                                      <span className="font-medium">{c.category}</span>
+                                      {c.description && <span className="text-muted-foreground text-xs ml-1">· {c.description}</span>}
+                                      {c.billingPeriod !== "monthly" && (
+                                        <span className="text-xs text-muted-foreground ml-1">({c.billingPeriod})</span>
+                                      )}
+                                    </div>
+                                    <span className="ml-2 shrink-0 text-rose-600 font-medium">{fmt(c.monthlyEquivalent)}/mo</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                          {expensesBreakdown.maintenanceCosts.length > 0 && (
+                            <>
+                              {expensesBreakdown.operatingCosts.length > 0 && <Separator className="my-3" />}
+                              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Maintenance (this month)</p>
+                              <div className="space-y-1.5">
+                                {expensesBreakdown.maintenanceCosts.map(m => (
+                                  <div key={m.id} className="flex items-center justify-between text-sm">
+                                    <span className="font-medium truncate max-w-[160px]">{m.title}</span>
+                                    <span className="ml-2 shrink-0 text-rose-600 font-medium">{fmt(m.actualCost)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                          <Separator className="my-3" />
+                          <div className="flex items-center justify-between text-sm font-bold">
+                            <span>Total this month</span>
+                            <span>{fmt(effectiveExpenses)}</span>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    ) : isEditing ? (
+                      EF("monthlyExpenses", "number")
+                    ) : (
+                      <span className="text-sm font-medium">{fmt(effectiveExpenses)}</span>
+                    )}
+                  </Field>
                   {p.lettingAgent && (
                     <Field label={`Letting Agent Fee${p.lettingAgentFee ? ` (${p.lettingAgentFee}%)` : ""}`}>
                       <span className="text-sm font-medium text-rose-600">
