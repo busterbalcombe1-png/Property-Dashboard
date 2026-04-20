@@ -59,15 +59,15 @@ function LoadingScreen({ onComplete }: { onComplete: () => void }) {
         {[{ top: -5, left: -5 }, { top: -5, right: -5 }, { bottom: -5, left: -5 }, { bottom: -5, right: -5 }].map((pos, i) => (
           <div key={i} style={{ position: "absolute", width: 7, height: 7, border: "1px solid #7a6020", background: "#080f1e", ...pos }} />
         ))}
-        <span className="pd-pul" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 34, fontWeight: 500, color: "#c9a84c", letterSpacing: 4, lineHeight: 1 }}>
-          PD
-        </span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" className="pd-pul" style={{ width: 54, height: 54 }}>
+          <polyline points="2,52 16,26 25,37 32,12 40,33 50,21 62,46" stroke="#c9a84c" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+        </svg>
       </div>
 
       {/* Title */}
       <div style={{ opacity: 0, animation: phase >= 1 ? "pd-fadein 0.8s ease 0.1s forwards" : "none", textAlign: "center", marginBottom: 5 }}>
         <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 32, fontWeight: 600, color: "#e8dfc8", letterSpacing: "0.08em", margin: 0, lineHeight: 1.1 }}>
-          PropDash
+          Blackridge Property Group
         </h1>
       </div>
 
