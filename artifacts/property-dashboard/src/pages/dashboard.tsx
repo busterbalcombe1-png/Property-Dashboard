@@ -156,16 +156,22 @@ export default function Dashboard() {
 
   const CHART_START = "2026-04";
   const cashflowChartData = useMemo(() => {
-    const stored = [...cashflowMonths].sort((a, b) => a.month.localeCompare(b.month));
-    const window12 = stored.length > 12 ? stored.slice(stored.length - 12) : stored;
-    return window12.map(r => {
-      const [yr, mo] = r.month.split("-").map(Number);
-      const label = new Date(yr, mo - 1, 1).toLocaleString("default", { month: "short", year: "2-digit" });
-      const income = Math.round(parseFloat(r.income));
-      const expenses = Math.round(parseFloat(r.expenses));
-      return { month: label, monthKey: r.month, income, expenses, cashflow: income - expenses };
+    const storedByMonth: Record<string, CashflowMonthRecord> = {};
+    for (const r of cashflowMonths) storedByMonth[r.month] = r;
+
+    const [startYr, startMo] = CHART_START.split("-").map(Number);
+
+    return Array.from({ length: 12 }, (_, i) => {
+      const d = new Date(startYr, startMo - 1 + i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const label = d.toLocaleString("default", { month: "short", year: "2-digit" });
+      const r = storedByMonth[key];
+      const income = r ? Math.round(parseFloat(r.income)) : 0;
+      const expenses = r ? Math.round(parseFloat(r.expenses)) : 0;
+      const hasData = !!r;
+      return { month: label, monthKey: key, income, expenses, cashflow: income - expenses, hasData };
     });
-  }, [cashflowMonths, CHART_START]);
+  }, [cashflowMonths]);
 
   const projectionData = useMemo(() => {
     if (!stats) return [];
@@ -521,6 +527,8 @@ export default function Dashboard() {
                       <RechartsTooltip
                         formatter={(value: number, name: string) => [formatCurrency(value), name]}
                         labelFormatter={(label, payload) => {
+                          const hasData = payload?.[0]?.payload?.hasData as boolean;
+                          if (!hasData) return <span><strong>{label}</strong><span className="ml-2 text-xs text-muted-foreground">No data yet</span></span>;
                           const net = payload?.[0] ? (payload[0].payload.cashflow as number) : null;
                           return (
                             <span>
@@ -537,8 +545,8 @@ export default function Dashboard() {
                         contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', fontSize: 13 }}
                       />
                       <Legend iconType="circle" wrapperStyle={{ paddingTop: 12, fontSize: 13 }} />
-                      <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={48} minPointSize={2} />
-                      <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={48} minPointSize={2} />
+                      <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={48} />
+                      <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={48} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
