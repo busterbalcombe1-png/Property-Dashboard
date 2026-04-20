@@ -43,7 +43,7 @@ const fmtDate = (val?: string | null, formatStr = "d MMM yyyy"): string => {
 type PropDetail = {
   id: number; address: string; propertyType: string; bedrooms: number; bathrooms?: number;
   yearBuilt?: number; epcRating?: string; councilTaxBand?: string; purchasePrice: number;
-  currentValue: number; monthlyRent: number; monthlyMortgage: number; monthlyExpenses: number;
+  currentValue: number; monthlyRent: number; tenantRentTotal: number; monthlyMortgage: number; monthlyExpenses: number;
   status: string; purchaseDate: string; mortgageLender?: string; mortgageRate?: number;
   mortgageType?: string; mortgageTermYears?: number; mortgageFixEndDate?: string; mortgageBalance?: number;
   photoUrl?: string; rightmoveUrl?: string; zooplaUrl?: string; landRegistryUrl?: string;
@@ -281,11 +281,12 @@ export default function PropertyDetail() {
   }
 
   const p: PropDetail = isEditing ? { ...property, ...editData } : property;
-  const lettingAgentCost = p.lettingAgent && p.lettingAgentFee ? (p.monthlyRent * p.lettingAgentFee) / 100 : 0;
-  const cashflow = p.monthlyRent - p.monthlyMortgage - p.monthlyExpenses - lettingAgentCost;
+  const effectiveRent = p.tenantRentTotal > 0 ? p.tenantRentTotal : p.monthlyRent;
+  const lettingAgentCost = p.lettingAgent && p.lettingAgentFee ? (effectiveRent * p.lettingAgentFee) / 100 : 0;
+  const cashflow = effectiveRent - p.monthlyMortgage - p.monthlyExpenses - lettingAgentCost;
   const capitalGain = p.currentValue - p.purchasePrice;
   const capitalGainPct = (capitalGain / p.purchasePrice) * 100;
-  const grossYield = (p.monthlyRent * 12 / p.currentValue) * 100;
+  const grossYield = (effectiveRent * 12 / p.currentValue) * 100;
   const netYield = (cashflow * 12 / p.currentValue) * 100;
   const mortgageBalance = p.mortgageBalance ?? 0;
   const equity = p.currentValue - mortgageBalance;
@@ -401,7 +402,7 @@ export default function PropertyDetail() {
             { label: "Equity", value: fmt(equity), sub: mortgageBalance > 0 ? `LTV ${ltv.toFixed(0)}%` : "No mortgage tracked" },
             { label: "Monthly Cashflow", value: fmt(cashflow), sub: `${fmt(cashflow * 12)}/yr`, pos: cashflow >= 0 },
             { label: "Gross Yield", value: fmtPct(grossYield), sub: `Net ${fmtPct(netYield)}` },
-            { label: "Monthly Rent", value: fmt(p.monthlyRent), sub: `${fmt(p.monthlyRent * 12)}/yr` },
+            { label: "Monthly Rent", value: fmt(effectiveRent), sub: `${fmt(effectiveRent * 12)}/yr` },
           ].map(({ label, value, sub, pos }) => (
             <Card key={label} className="border-border/50 shadow-sm">
               <CardContent className="pt-4 pb-3 px-4">
@@ -478,7 +479,12 @@ export default function PropertyDetail() {
                 </div>
                 <Separator className="my-3" />
                 <div className={`grid gap-x-6 gap-y-4 ${p.lettingAgent ? "grid-cols-2 sm:grid-cols-5" : "grid-cols-2 sm:grid-cols-4"}`}>
-                  <Field label="Monthly Rent">{isEditing ? EF("monthlyRent", "number") : <span className="text-sm font-medium">{fmt(p.monthlyRent)}</span>}</Field>
+                  <Field label="Monthly Rent">
+                    <span className="text-sm font-medium">{fmt(effectiveRent)}</span>
+                    {p.tenantRentTotal > 0 && (
+                      <span className="ml-1.5 text-xs text-muted-foreground">(from tenants)</span>
+                    )}
+                  </Field>
                   <Field label="Monthly Mortgage">{isEditing ? EF("monthlyMortgage", "number") : <span className="text-sm font-medium">{fmt(p.monthlyMortgage)}</span>}</Field>
                   <Field label="Other Expenses">{isEditing ? EF("monthlyExpenses", "number") : <span className="text-sm font-medium">{fmt(p.monthlyExpenses)}</span>}</Field>
                   {p.lettingAgent && (

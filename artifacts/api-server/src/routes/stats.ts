@@ -20,7 +20,16 @@ router.get("/stats", async (_req, res) => {
     const totalMortgageBalance = properties.reduce((sum, p) => sum + parseFloat(p.monthlyMortgage) * 12 * 20, 0);
     const totalEquity = totalPortfolioValue - totalMortgageBalance;
 
-    const monthlyRentIncome = properties.reduce((sum, p) => sum + parseFloat(p.monthlyRent), 0);
+    const rentTotals = await db
+      .select({
+        propertyId: tenantsTable.propertyId,
+        total: sql<string>`coalesce(sum(${tenantsTable.monthlyRent}), 0)`,
+      })
+      .from(tenantsTable)
+      .groupBy(tenantsTable.propertyId);
+    const rentByPropId: Record<number, number> = {};
+    for (const r of rentTotals) rentByPropId[r.propertyId] = parseFloat(r.total);
+    const monthlyRentIncome = properties.reduce((sum, p) => sum + (rentByPropId[p.id] ?? 0), 0);
     const monthlyMortgageCosts = properties.reduce((sum, p) => sum + parseFloat(p.monthlyMortgage), 0);
     const monthlyExpenses = properties.reduce((sum, p) => sum + parseFloat(p.monthlyExpenses), 0);
     const monthlyCashflow = monthlyRentIncome - monthlyMortgageCosts - monthlyExpenses;
@@ -59,10 +68,10 @@ router.get("/stats", async (_req, res) => {
       };
     });
 
-    // Rent by property
+    // Rent by property (use live tenant totals)
     const rentByProperty = properties.map(p => ({
       address: p.address.split(",")[0].trim(),
-      rent: parseFloat(p.monthlyRent),
+      rent: rentByPropId[p.id] ?? 0,
     }));
 
     res.json({

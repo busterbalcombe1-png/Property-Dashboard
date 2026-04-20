@@ -1,13 +1,22 @@
 import { Router, type IRouter } from "express";
-import { db, propertiesTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { db, propertiesTable, tenantsTable } from "@workspace/db";
+import { eq, sql } from "drizzle-orm";
 
 const router: IRouter = Router();
 
 router.get("/properties", async (_req, res) => {
   try {
     const rows = await db.select().from(propertiesTable).orderBy(propertiesTable.id);
-    res.json(rows.map(formatProperty));
+    const rentTotals = await db
+      .select({
+        propertyId: tenantsTable.propertyId,
+        total: sql<string>`coalesce(sum(${tenantsTable.monthlyRent}), 0)`,
+      })
+      .from(tenantsTable)
+      .groupBy(tenantsTable.propertyId);
+    const rentByPropId: Record<number, number> = {};
+    for (const r of rentTotals) rentByPropId[r.propertyId] = parseFloat(r.total);
+    res.json(rows.map(row => formatProperty(row, rentByPropId[row.id] ?? 0)));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Internal server error" });
@@ -19,7 +28,12 @@ router.get("/properties/:id", async (req, res) => {
     const id = parseInt(req.params.id);
     const [row] = await db.select().from(propertiesTable).where(eq(propertiesTable.id, id));
     if (!row) return res.status(404).json({ error: "Property not found" });
-    res.json(formatProperty(row));
+    const [rentRow] = await db
+      .select({ total: sql<string>`coalesce(sum(${tenantsTable.monthlyRent}), 0)` })
+      .from(tenantsTable)
+      .where(eq(tenantsTable.propertyId, id));
+    const tenantRentTotal = parseFloat(rentRow?.total ?? "0");
+    res.json(formatProperty(row, tenantRentTotal));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Internal server error" });
@@ -30,7 +44,7 @@ router.post("/properties", async (req, res) => {
   try {
     const body = req.body;
     const [row] = await db.insert(propertiesTable).values(buildInsert(body)).returning();
-    res.status(201).json(formatProperty(row));
+    res.status(201).json(formatProperty(row, 0));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Internal server error" });
@@ -46,7 +60,12 @@ router.put("/properties/:id", async (req, res) => {
       .where(eq(propertiesTable.id, id))
       .returning();
     if (!row) return res.status(404).json({ error: "Property not found" });
-    res.json(formatProperty(row));
+    const [rentRow] = await db
+      .select({ total: sql<string>`coalesce(sum(${tenantsTable.monthlyRent}), 0)` })
+      .from(tenantsTable)
+      .where(eq(tenantsTable.propertyId, id));
+    const tenantRentTotal = parseFloat(rentRow?.total ?? "0");
+    res.json(formatProperty(row, tenantRentTotal));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Internal server error" });
@@ -105,7 +124,7 @@ function buildInsert(body: Record<string, unknown>) {
   };
 }
 
-function formatProperty(row: typeof propertiesTable.$inferSelect) {
+function formatProperty(row: typeof propertiesTable.$inferSelect, tenantRentTotal: number) {
   return {
     id: row.id,
     address: row.address,
@@ -118,6 +137,7 @@ function formatProperty(row: typeof propertiesTable.$inferSelect) {
     purchasePrice: parseFloat(row.purchasePrice),
     currentValue: parseFloat(row.currentValue),
     monthlyRent: parseFloat(row.monthlyRent),
+    tenantRentTotal,
     monthlyMortgage: parseFloat(row.monthlyMortgage),
     monthlyExpenses: parseFloat(row.monthlyExpenses),
     status: row.status,
