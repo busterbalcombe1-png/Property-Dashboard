@@ -120,10 +120,14 @@ export default function Dashboard() {
     queryKey: ["calendar-aggregate"],
     queryFn: () => fetch(`${API_BASE}/api/calendar/aggregate`).then(r => r.json()),
   });
-  const { data: cashflowMonths = [], refetch: refetchCashflow } = useQuery<CashflowMonthRecord[]>({
+  const { data: rawCashflowMonths, refetch: refetchCashflow } = useQuery<CashflowMonthRecord[]>({
     queryKey: ["cashflow-months"],
-    queryFn: () => fetch(`${API_BASE}/api/cashflow-months`).then(r => r.json()),
+    queryFn: () => fetch(`${API_BASE}/api/cashflow-months`).then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    }),
   });
+  const cashflowMonths: CashflowMonthRecord[] = Array.isArray(rawCashflowMonths) ? rawCashflowMonths : [];
 
   const [appreciationRate, setAppreciationRate] = useState(5);
   const [projectionYears, setProjectionYears] = useState(25);
