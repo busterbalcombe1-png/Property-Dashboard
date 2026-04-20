@@ -10,12 +10,14 @@ import uploadRouter from "./upload.js";
 import rentRouter from "./rent.js";
 import tradespeopleRouter from "./tradespeople.js";
 import dealsRouter from "./deals.js";
+import calendarRouter from "./calendar.js";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(propertiesRouter);
 router.use(tenantsRouter);
+router.use(calendarRouter);
 router.use(maintenanceRouter);
 router.use(refurbRouter);
 router.use(statsRouter);

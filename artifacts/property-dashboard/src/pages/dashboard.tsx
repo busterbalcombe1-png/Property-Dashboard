@@ -4,12 +4,20 @@ import {
   Wallet, 
   PoundSterling,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  CalendarDays,
+  AlertTriangle,
+  ChevronRight
 } from "lucide-react";
 import { useGetStats } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
+import { format, differenceInDays, parseISO } from "date-fns";
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AppLayout } from "@/components/layout/app-layout";
+import type { CalendarEvent } from "./calendar";
 import {
   AreaChart,
   Area,
@@ -84,9 +92,31 @@ function StatCard({
 }
 
 const PIE_COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4'];
+const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+const EVENT_DOT: Record<string, string> = {
+  compliance: "bg-amber-500",
+  lease_start: "bg-emerald-500",
+  lease_end: "bg-rose-500",
+  task: "bg-blue-500",
+};
 
 export default function Dashboard() {
   const { data: stats, isLoading } = useGetStats();
+  const { data: calEvents = [] } = useQuery<CalendarEvent[]>({
+    queryKey: ["calendar-aggregate"],
+    queryFn: () => fetch(`${API_BASE}/api/calendar/aggregate`).then(r => r.json()),
+  });
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const upcomingEvents = calEvents
+    .filter(e => {
+      const diff = differenceInDays(parseISO(e.date), today);
+      return diff >= -1 && diff <= 60;
+    })
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 6);
 
   return (
     <AppLayout>
@@ -130,6 +160,55 @@ export default function Dashboard() {
             loading={isLoading}
           />
         </div>
+
+        {/* Upcoming Events Widget */}
+        <Card className="border-border/50 shadow-sm">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                Coming Up
+              </CardTitle>
+              <Link href="/calendar">
+                <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  View calendar <ChevronRight className="h-3 w-3" />
+                </button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {upcomingEvents.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Nothing in the next 60 days</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {upcomingEvents.map(e => {
+                  const d = parseISO(e.date);
+                  const diff = differenceInDays(d, today);
+                  const isOverdue = diff < 0;
+                  const isCritical = diff >= 0 && diff <= 14;
+                  const isWarning = diff > 14 && diff <= 30;
+                  const urgColor = isOverdue ? "text-rose-600" : isCritical ? "text-rose-500" : isWarning ? "text-amber-600" : "text-muted-foreground";
+                  const urgLabel = isOverdue ? "Overdue" : diff === 0 ? "Today" : diff === 1 ? "Tomorrow" : `${diff} days`;
+                  return (
+                    <Link key={e.id} href="/calendar">
+                      <div className="flex items-start gap-3 p-3 rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all cursor-pointer">
+                        <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${EVENT_DOT[e.type] ?? "bg-blue-500"}`} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{e.title}</p>
+                          {(e.propertyAddress ?? e.tenantName) && (
+                            <p className="text-xs text-muted-foreground truncate">{e.propertyAddress ?? e.tenantName}</p>
+                          )}
+                          <p className={`text-xs font-medium mt-0.5 ${urgColor}`}>{format(d, "d MMM yyyy")} · {urgLabel}</p>
+                        </div>
+                        {(isOverdue || isCritical) && <AlertTriangle className="h-4 w-4 shrink-0 text-rose-500 mt-0.5" />}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

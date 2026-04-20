@@ -16,6 +16,7 @@ import RentTracking from "./pages/rent";
 import PropertyLocations from "./pages/property-locations";
 import Deals from "./pages/deals";
 import DealDetail from "./pages/deal-detail";
+import CalendarPage from "./pages/calendar";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -45,6 +46,7 @@ function Router() {
       <Route path="/rent" component={RentTracking} />
       <Route path="/deals" component={Deals} />
       <Route path="/deals/:id" component={DealDetail} />
+      <Route path="/calendar" component={CalendarPage} />
       <Route component={NotFound} />
     </Switch>
   );

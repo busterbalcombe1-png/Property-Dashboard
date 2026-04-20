@@ -9,7 +9,8 @@ import {
   PoundSterling,
   LogOut,
   MapPin,
-  Target
+  Target,
+  CalendarDays
 } from "lucide-react";
 import {
   Sidebar,
@@ -28,6 +29,7 @@ import {
 } from "@/components/ui/sidebar";
 
 const mainNavItems = [
+  { title: "Calendar", url: "/calendar", icon: CalendarDays },
   { title: "Properties", url: "/properties", icon: Building2 },
   { title: "Tenants", url: "/tenants", icon: Users },
   { title: "Rent Accounts", url: "/rent", icon: PoundSterling },
