@@ -308,7 +308,10 @@ export default function Dashboard() {
           {/* Cashflow Chart */}
           <Card className="lg:col-span-3 border-border/50 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg">Monthly Cashflow (Income vs Expenses)</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Monthly Cashflow — Income vs Expenses</CardTitle>
+                <p className="text-xs text-muted-foreground">Income = rent · Expenses = mortgage + operating costs + maintenance</p>
+              </div>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -316,7 +319,7 @@ export default function Dashboard() {
               ) : (
                 <div className="h-[350px] w-full mt-4">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={stats?.cashflowByMonth || []} margin={{ top: 5, right: 0, left: 20, bottom: 0 }}>
+                    <BarChart data={stats?.cashflowByMonth || []} margin={{ top: 5, right: 10, left: 20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                       <XAxis 
                         dataKey="month" 
@@ -326,19 +329,19 @@ export default function Dashboard() {
                         dy={10}
                       />
                       <YAxis 
-                        tickFormatter={(val) => `£${val}`} 
+                        tickFormatter={(val) => val === 0 ? "£0" : `£${(val / 1000).toFixed(val >= 10000 ? 0 : 1)}k`}
                         axisLine={false} 
                         tickLine={false} 
                         tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
                       />
                       <RechartsTooltip 
-                        formatter={(value: number) => formatCurrency(value)}
-                        cursor={{ fill: 'hsl(var(--muted)/0.4)' }}
-                        contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))' }}
+                        formatter={(value: number, name: string) => [formatCurrency(value), name]}
+                        cursor={{ fill: 'hsl(var(--muted) / 0.4)' }}
+                        contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', fontSize: 13 }}
                       />
-                      <Legend iconType="circle" />
-                      <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                      <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                      <Legend iconType="circle" wrapperStyle={{ paddingTop: 12, fontSize: 13 }} />
+                      <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={44} minPointSize={2} />
+                      <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={44} minPointSize={2} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
