@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { 
   Building2, 
   TrendingUp, 
@@ -11,6 +11,9 @@ import {
   ChevronRight,
   Percent,
   CalendarRange,
+  Edit2,
+  Check,
+  X,
 } from "lucide-react";
 import { useGetStats } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
@@ -19,6 +22,8 @@ import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { AppLayout } from "@/components/layout/app-layout";
 import type { CalendarEvent } from "./calendar";
 import {
@@ -104,15 +109,63 @@ const EVENT_DOT: Record<string, string> = {
   task: "bg-blue-500",
 };
 
+type CashflowMonthRecord = {
+  id: number; month: string; income: string; expenses: string; notes: string | null;
+  createdAt: string; updatedAt: string;
+};
+
 export default function Dashboard() {
   const { data: stats, isLoading } = useGetStats();
   const { data: calEvents = [] } = useQuery<CalendarEvent[]>({
     queryKey: ["calendar-aggregate"],
     queryFn: () => fetch(`${API_BASE}/api/calendar/aggregate`).then(r => r.json()),
   });
+  const { data: cashflowMonths = [], refetch: refetchCashflow } = useQuery<CashflowMonthRecord[]>({
+    queryKey: ["cashflow-months"],
+    queryFn: () => fetch(`${API_BASE}/api/cashflow-months`).then(r => r.json()),
+  });
 
   const [appreciationRate, setAppreciationRate] = useState(5);
   const [projectionYears, setProjectionYears] = useState(25);
+
+  const [cfEditOpen, setCfEditOpen] = useState(false);
+  type DraftRow = { income: string; expenses: string; saving: boolean };
+  const [cfDraft, setCfDraft] = useState<Record<string, DraftRow>>({});
+
+  const openCfEdit = useCallback(() => {
+    const draft: Record<string, DraftRow> = {};
+    for (const r of cashflowMonths) {
+      draft[r.month] = { income: String(parseFloat(r.income)), expenses: String(parseFloat(r.expenses)), saving: false };
+    }
+    setCfDraft(draft);
+    setCfEditOpen(true);
+  }, [cashflowMonths]);
+
+  const saveCfRow = useCallback(async (month: string) => {
+    const row = cfDraft[month];
+    if (!row) return;
+    setCfDraft(prev => ({ ...prev, [month]: { ...prev[month], saving: true } }));
+    await fetch(`${API_BASE}/api/cashflow-months/${month}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ income: parseFloat(row.income) || 0, expenses: parseFloat(row.expenses) || 0 }),
+    });
+    await refetchCashflow();
+    setCfDraft(prev => ({ ...prev, [month]: { ...prev[month], saving: false } }));
+  }, [cfDraft, refetchCashflow]);
+
+  const CHART_START = "2026-04";
+  const cashflowChartData = useMemo(() => {
+    const stored = [...cashflowMonths].sort((a, b) => a.month.localeCompare(b.month));
+    const window12 = stored.length > 12 ? stored.slice(stored.length - 12) : stored;
+    return window12.map(r => {
+      const [yr, mo] = r.month.split("-").map(Number);
+      const label = new Date(yr, mo - 1, 1).toLocaleString("default", { month: "short", year: "2-digit" });
+      const income = Math.round(parseFloat(r.income));
+      const expenses = Math.round(parseFloat(r.expenses));
+      return { month: label, monthKey: r.month, income, expenses, cashflow: income - expenses };
+    });
+  }, [cashflowMonths, CHART_START]);
 
   const projectionData = useMemo(() => {
     if (!stats) return [];
@@ -423,43 +476,131 @@ export default function Dashboard() {
 
           {/* Cashflow Chart */}
           <Card className="lg:col-span-3 border-border/50 shadow-sm">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Monthly Cashflow — Income vs Expenses</CardTitle>
-                <p className="text-xs text-muted-foreground">Income = rent · Expenses = mortgage + operating costs + maintenance</p>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <CardTitle className="text-lg">Monthly Cashflow — Income vs Expenses</CardTitle>
+                  <p className="text-xs text-muted-foreground mt-0.5">Recorded at month-end · rolling 12 months from Apr 2026</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={cfEditOpen ? () => setCfEditOpen(false) : openCfEdit}
+                  className="shrink-0"
+                >
+                  {cfEditOpen ? <><X className="h-3.5 w-3.5 mr-1.5" />Close</>
+                              : <><Edit2 className="h-3.5 w-3.5 mr-1.5" />Edit Data</>}
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-[350px] w-full" />
+              {/* Bar chart */}
+              {cashflowMonths.length === 0 ? (
+                <div className="h-[280px] flex flex-col items-center justify-center text-muted-foreground gap-2">
+                  <Wallet className="h-8 w-8 opacity-30" />
+                  <p className="text-sm">No cashflow data recorded yet.</p>
+                </div>
               ) : (
-                <div className="h-[350px] w-full mt-4">
+                <div className="h-[280px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={stats?.cashflowByMonth || []} margin={{ top: 5, right: 10, left: 20, bottom: 0 }}>
+                    <BarChart data={cashflowChartData} margin={{ top: 5, right: 10, left: 20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                      <XAxis 
-                        dataKey="month" 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} 
+                      <XAxis
+                        dataKey="month"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
                         dy={10}
                       />
-                      <YAxis 
+                      <YAxis
                         tickFormatter={(val) => val === 0 ? "£0" : `£${(val / 1000).toFixed(val >= 10000 ? 0 : 1)}k`}
-                        axisLine={false} 
-                        tickLine={false} 
+                        axisLine={false}
+                        tickLine={false}
                         tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
                       />
-                      <RechartsTooltip 
+                      <RechartsTooltip
                         formatter={(value: number, name: string) => [formatCurrency(value), name]}
+                        labelFormatter={(label, payload) => {
+                          const net = payload?.[0] ? (payload[0].payload.cashflow as number) : null;
+                          return (
+                            <span>
+                              <strong>{label}</strong>
+                              {net !== null && (
+                                <span className={`ml-2 text-xs font-medium ${net >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
+                                  Net {formatCurrency(net)}
+                                </span>
+                              )}
+                            </span>
+                          );
+                        }}
                         cursor={{ fill: 'hsl(var(--muted) / 0.4)' }}
                         contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', fontSize: 13 }}
                       />
                       <Legend iconType="circle" wrapperStyle={{ paddingTop: 12, fontSize: 13 }} />
-                      <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={44} minPointSize={2} />
-                      <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={44} minPointSize={2} />
+                      <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={48} minPointSize={2} />
+                      <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={48} minPointSize={2} />
                     </BarChart>
                   </ResponsiveContainer>
+                </div>
+              )}
+
+              {/* Edit panel */}
+              {cfEditOpen && (
+                <div className="mt-6 border border-border/50 rounded-lg overflow-hidden">
+                  <div className="bg-muted/40 px-4 py-2.5 border-b border-border/50 flex items-center justify-between">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Edit Monthly Records</p>
+                    <p className="text-xs text-muted-foreground">Edit figures then click ✓ to save each row</p>
+                  </div>
+                  <div className="divide-y divide-border/50">
+                    {cashflowMonths
+                      .slice()
+                      .sort((a, b) => a.month.localeCompare(b.month))
+                      .map(r => {
+                        const [yr, mo] = r.month.split("-").map(Number);
+                        const label = new Date(yr, mo - 1, 1).toLocaleString("default", { month: "long", year: "numeric" });
+                        const draft = cfDraft[r.month];
+                        if (!draft) return null;
+                        const income = parseFloat(draft.income) || 0;
+                        const expenses = parseFloat(draft.expenses) || 0;
+                        const net = income - expenses;
+                        return (
+                          <div key={r.month} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-3 items-center px-4 py-3">
+                            <div>
+                              <p className="text-sm font-medium">{label}</p>
+                              <p className={`text-xs mt-0.5 font-medium ${net >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
+                                Net {formatCurrency(net)}
+                              </p>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Income (£)</label>
+                              <Input
+                                type="number"
+                                className="h-8 text-sm"
+                                value={draft.income}
+                                onChange={e => setCfDraft(prev => ({ ...prev, [r.month]: { ...prev[r.month], income: e.target.value } }))}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Expenses (£)</label>
+                              <Input
+                                type="number"
+                                className="h-8 text-sm"
+                                value={draft.expenses}
+                                onChange={e => setCfDraft(prev => ({ ...prev, [r.month]: { ...prev[r.month], expenses: e.target.value } }))}
+                              />
+                            </div>
+                            <button
+                              onClick={() => saveCfRow(r.month)}
+                              disabled={draft.saving}
+                              className="mt-5 flex items-center justify-center w-8 h-8 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 transition-colors disabled:opacity-50"
+                              title="Save this row"
+                            >
+                              <Check className="h-4 w-4" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
               )}
             </CardContent>

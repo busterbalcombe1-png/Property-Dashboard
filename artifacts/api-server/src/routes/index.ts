@@ -12,6 +12,7 @@ import tradespeopleRouter from "./tradespeople.js";
 import dealsRouter from "./deals.js";
 import calendarRouter from "./calendar.js";
 import operatingCostsRouter from "./operating-costs.js";
+import cashflowMonthsRouter from "./cashflow-months.js";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(uploadRouter);
 router.use(rentRouter);
 router.use(tradespeopleRouter);
 router.use(dealsRouter);
+router.use(cashflowMonthsRouter);
 
 export default router;
