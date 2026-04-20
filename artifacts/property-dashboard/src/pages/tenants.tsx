@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { format } from "date-fns";
-import { Plus, Download, Edit2, Trash2, Users, ChevronRight } from "lucide-react";
+import { format, addMonths, differenceInMonths } from "date-fns";
+import { Plus, Download, Edit2, Trash2, Users, ChevronRight, RotateCcw, Bell } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/auth-context";
@@ -50,8 +50,8 @@ const tenantSchema = z.object({
   email: z.string().email("Valid email is required"),
   phone: z.string().min(1, "Phone is required"),
   propertyId: z.coerce.number().min(1, "Property selection is required"),
-  leaseStart: z.string().min(1, "Lease start date is required"),
-  leaseEnd: z.string().min(1, "Lease end date is required"),
+  leaseStart: z.string().min(1, "Tenancy start date is required"),
+  noticeGivenDate: z.string().optional().or(z.literal("")),
   monthlyRent: z.coerce.number().min(0),
   depositPaid: z.coerce.number().min(0),
   status: z.enum(["active", "inactive", "pending"]),
@@ -72,6 +72,32 @@ function StatusBadge({ status }: { status: string }) {
     case 'pending': return <Badge className="bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-500/20">Pending</Badge>;
     default: return <Badge variant="outline">{status}</Badge>;
   }
+}
+
+function NoticeCell({ tenant }: { tenant: Tenant & { noticeGivenDate?: string } }) {
+  const nd = (tenant as Record<string, string>).noticeGivenDate;
+  if (!nd) {
+    return (
+      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <RotateCcw className="h-3.5 w-3.5" />
+        Rolling
+      </div>
+    );
+  }
+  const vacateDate = addMonths(new Date(nd), 2);
+  const daysLeft = Math.ceil((vacateDate.getTime() - Date.now()) / 86400000);
+  return (
+    <div className="text-sm">
+      <div className="flex items-center gap-1 text-amber-600 font-medium">
+        <Bell className="h-3.5 w-3.5" />
+        Notice given {format(new Date(nd), "d MMM yyyy")}
+      </div>
+      <div className="text-xs text-muted-foreground mt-0.5">
+        Vacates {format(vacateDate, "d MMM yyyy")}
+        {daysLeft > 0 ? ` · ${daysLeft}d remaining` : " · Past due"}
+      </div>
+    </div>
+  );
 }
 
 export default function Tenants() {
@@ -128,7 +154,7 @@ export default function Tenants() {
       phone: "",
       propertyId: 0,
       leaseStart: new Date().toISOString().split('T')[0],
-      leaseEnd: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+      noticeGivenDate: "",
       monthlyRent: 0,
       depositPaid: 0,
       status: "active",
@@ -142,6 +168,7 @@ export default function Tenants() {
 
   const handleOpenEdit = (tenant: Tenant) => {
     setEditingTenant(tenant);
+    const t = tenant as unknown as Record<string, string>;
     form.reset({
       firstName: tenant.firstName,
       lastName: tenant.lastName,
@@ -149,17 +176,16 @@ export default function Tenants() {
       phone: tenant.phone,
       propertyId: tenant.propertyId,
       leaseStart: tenant.leaseStart.split('T')[0],
-      leaseEnd: tenant.leaseEnd.split('T')[0],
+      noticeGivenDate: t.noticeGivenDate ?? "",
       monthlyRent: tenant.monthlyRent,
       depositPaid: tenant.depositPaid,
-      status: tenant.status,
+      status: tenant.status as "active" | "inactive" | "pending",
       notes: tenant.notes || "",
-      partnerFirstName: (tenant as unknown as Record<string,string>).partnerFirstName || "",
-      partnerLastName: (tenant as unknown as Record<string,string>).partnerLastName || "",
-      partnerEmail: (tenant as unknown as Record<string,string>).partnerEmail || "",
-      partnerPhone: (tenant as unknown as Record<string,string>).partnerPhone || "",
+      partnerFirstName: t.partnerFirstName || "",
+      partnerLastName: t.partnerLastName || "",
+      partnerEmail: t.partnerEmail || "",
+      partnerPhone: t.partnerPhone || "",
     });
-    const t = tenant as unknown as Record<string,string>;
     setShowPartner(!!(t.partnerFirstName || t.partnerLastName || t.partnerEmail || t.partnerPhone));
     setDialogOpen(true);
   };
@@ -173,7 +199,7 @@ export default function Tenants() {
       phone: "",
       propertyId: 0,
       leaseStart: new Date().toISOString().split('T')[0],
-      leaseEnd: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+      noticeGivenDate: "",
       monthlyRent: 0,
       depositPaid: 0,
       status: "active",
@@ -188,10 +214,15 @@ export default function Tenants() {
   };
 
   const onSubmit = (values: z.infer<typeof tenantSchema>) => {
+    const payload = {
+      ...values,
+      leaseEnd: undefined,
+      noticeGivenDate: values.noticeGivenDate || undefined,
+    };
     if (editingTenant) {
-      updateMutation.mutate({ id: editingTenant.id, data: values });
+      updateMutation.mutate({ id: editingTenant.id, data: payload });
     } else {
-      createMutation.mutate({ data: values });
+      createMutation.mutate({ data: payload });
     }
   };
 
@@ -206,7 +237,7 @@ export default function Tenants() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-display font-bold text-foreground">Tenants</h1>
-            <p className="text-muted-foreground mt-1 text-sm">Manage tenant profiles and lease agreements.</p>
+            <p className="text-muted-foreground mt-1 text-sm">Manage tenant profiles and rolling tenancy agreements.</p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" className="bg-card shadow-sm hover-elevate" onClick={() => tenants && exportToCsv(tenants, 'tenants')} disabled={!tenants?.length}>
@@ -297,7 +328,8 @@ export default function Tenants() {
                       </>}
 
                       <div className="md:col-span-2 mt-4 mb-2">
-                        <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Lease Details</h4>
+                        <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Tenancy Details</h4>
+                        <p className="text-xs text-muted-foreground mt-0.5">Rolling periodic tenancy — no fixed end date (Renters Reform Act)</p>
                         <div className="h-px w-full bg-border mt-2"></div>
                       </div>
 
@@ -336,11 +368,22 @@ export default function Tenants() {
                       )} />
 
                       <FormField control={form.control} name="leaseStart" render={({ field }) => (
-                        <FormItem><FormLabel>Lease Start</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem>
+                          <FormLabel>Tenancy Start Date</FormLabel>
+                          <FormControl><Input type="date" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
                       )} />
 
-                      <FormField control={form.control} name="leaseEnd" render={({ field }) => (
-                        <FormItem><FormLabel>Lease End</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                      <FormField control={form.control} name="noticeGivenDate" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            Notice Given Date
+                            <span className="ml-1.5 text-xs text-muted-foreground font-normal">(optional — 2-month notice period)</span>
+                          </FormLabel>
+                          <FormControl><Input type="date" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
                       )} />
 
                       <FormField control={form.control} name="monthlyRent" render={({ field }) => (
@@ -381,7 +424,7 @@ export default function Tenants() {
                   <TableHead>Tenant Name</TableHead>
                   <TableHead>Property</TableHead>
                   <TableHead>Contact</TableHead>
-                  <TableHead>Lease Ends</TableHead>
+                  <TableHead>Tenancy</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Rent</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -394,7 +437,7 @@ export default function Tenants() {
                       <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-40" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-28" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
                       <TableCell><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
@@ -410,48 +453,55 @@ export default function Tenants() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredData?.map((tenant) => (
-                    <TableRow
-                      key={tenant.id}
-                      className="hover:bg-muted/30 cursor-pointer group"
-                      onClick={() => navigate(`/tenants/${tenant.id}`)}
-                    >
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          {tenant.firstName} {tenant.lastName}
-                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground max-w-[200px] truncate" title={tenant.propertyAddress}>
-                        {tenant.propertyAddress || 'Unassigned'}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        <div>{tenant.email}</div>
-                        <div className="text-xs">{tenant.phone}</div>
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {format(new Date(tenant.leaseEnd), 'MMM d, yyyy')}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={tenant.status} />
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {formatCurrency(tenant.monthlyRent)}
-                      </TableCell>
-                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex justify-end gap-2">
-                          {!isReadOnly && <>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleOpenEdit(tenant)}>
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500/70 hover:text-rose-600 hover:bg-rose-500/10" onClick={() => setDeleteId(tenant.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          </>}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  filteredData?.map((tenant) => {
+                    const t = tenant as unknown as Record<string, string>;
+                    const monthsIn = differenceInMonths(new Date(), new Date(tenant.leaseStart));
+                    return (
+                      <TableRow
+                        key={tenant.id}
+                        className="hover:bg-muted/30 cursor-pointer group"
+                        onClick={() => navigate(`/tenants/${tenant.id}`)}
+                      >
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {tenant.firstName} {tenant.lastName}
+                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground max-w-[200px] truncate" title={tenant.propertyAddress}>
+                          {tenant.propertyAddress || 'Unassigned'}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          <div>{tenant.email}</div>
+                          <div className="text-xs">{tenant.phone}</div>
+                        </TableCell>
+                        <TableCell>
+                          <NoticeCell tenant={tenant as Tenant & { noticeGivenDate?: string }} />
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            Started {format(new Date(tenant.leaseStart), "d MMM yyyy")} · {monthsIn}mo
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge status={tenant.status} />
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatCurrency(tenant.monthlyRent)}
+                        </TableCell>
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex justify-end gap-2">
+                            {!isReadOnly && <>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleOpenEdit(tenant)}>
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500/70 hover:text-rose-600 hover:bg-rose-500/10" onClick={() => setDeleteId(tenant.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                            </>}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>

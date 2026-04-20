@@ -1,10 +1,10 @@
 import { useParams, useLocation } from "wouter";
 import { useAuth } from "@/contexts/auth-context";
-import { format, differenceInDays, differenceInMonths, differenceInYears, isPast } from "date-fns";
+import { format, differenceInMonths, differenceInDays, addMonths } from "date-fns";
 import {
-  ArrowLeft, Mail, Phone, Home, Calendar, PoundSterling,
-  Shield, FileText, Edit2, AlertTriangle, CheckCircle2, Clock,
-  Users, TrendingUp, Building2
+  ArrowLeft, Mail, Phone, Calendar, PoundSterling,
+  Shield, FileText, Edit2, AlertTriangle, CheckCircle2,
+  Users, TrendingUp, Building2, RotateCcw, Bell
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/app-layout";
@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
-import { useListTenants, useUpdateTenant, getListTenantsQueryKey, type Tenant } from "@workspace/api-client-react";
+import { useUpdateTenant, getListTenantsQueryKey } from "@workspace/api-client-react";
 import { useListProperties } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -43,7 +43,7 @@ const tenantSchema = z.object({
   phone: z.string().min(1),
   propertyId: z.coerce.number().min(1),
   leaseStart: z.string().min(1),
-  leaseEnd: z.string().min(1),
+  noticeGivenDate: z.string().optional().or(z.literal("")),
   monthlyRent: z.coerce.number().min(0),
   depositPaid: z.coerce.number().min(0),
   status: z.enum(["active", "inactive", "pending"]),
@@ -52,7 +52,8 @@ const tenantSchema = z.object({
 
 type TenantDetail = {
   id: number; firstName: string; lastName: string; email: string; phone: string;
-  propertyId: number; propertyAddress: string; leaseStart: string; leaseEnd: string;
+  propertyId: number; propertyAddress: string; leaseStart: string;
+  noticeGivenDate?: string;
   monthlyRent: number; depositPaid: number; status: string; notes?: string;
   partnerFirstName?: string; partnerLastName?: string; partnerEmail?: string; partnerPhone?: string;
   createdAt: string; updatedAt: string;
@@ -82,7 +83,9 @@ function PaymentStatusBadge({ status }: { status: string }) {
   }
 }
 
-function KpiCard({ label, value, sub, icon: Icon }: { label: string; value: string; sub?: string; icon: React.ElementType }) {
+function KpiCard({ label, value, sub, icon: Icon, accent }: { label: string; value: string; sub?: string; icon: React.ElementType; accent?: "amber" | "rose" }) {
+  const ring = accent === "amber" ? "ring-amber-500/20 bg-amber-500/10" : accent === "rose" ? "ring-rose-500/20 bg-rose-500/10" : "ring-primary/20 bg-primary/10";
+  const icon = accent === "amber" ? "text-amber-600" : accent === "rose" ? "text-rose-600" : "text-primary";
   return (
     <Card className="border-border/50 shadow-sm">
       <CardContent className="pt-5 pb-4">
@@ -92,8 +95,8 @@ function KpiCard({ label, value, sub, icon: Icon }: { label: string; value: stri
             <p className="text-2xl font-bold tracking-tight">{value}</p>
             {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
           </div>
-          <div className="rounded-md bg-primary/10 p-2 ring-1 ring-primary/20 shrink-0 mt-0.5">
-            <Icon className="h-4 w-4 text-primary" />
+          <div className={`rounded-md p-2 ring-1 shrink-0 mt-0.5 ${ring}`}>
+            <Icon className={`h-4 w-4 ${icon}`} />
           </div>
         </div>
       </CardContent>
@@ -136,7 +139,7 @@ export default function TenantDetail() {
 
   const form = useForm<z.infer<typeof tenantSchema>>({
     resolver: zodResolver(tenantSchema),
-    defaultValues: { firstName: "", lastName: "", email: "", phone: "", propertyId: 0, leaseStart: "", leaseEnd: "", monthlyRent: 0, depositPaid: 0, status: "active", notes: "" },
+    defaultValues: { firstName: "", lastName: "", email: "", phone: "", propertyId: 0, leaseStart: "", noticeGivenDate: "", monthlyRent: 0, depositPaid: 0, status: "active", notes: "" },
   });
 
   const openEdit = () => {
@@ -144,7 +147,8 @@ export default function TenantDetail() {
     form.reset({
       firstName: tenant.firstName, lastName: tenant.lastName, email: tenant.email,
       phone: tenant.phone, propertyId: tenant.propertyId,
-      leaseStart: tenant.leaseStart.split("T")[0], leaseEnd: tenant.leaseEnd.split("T")[0],
+      leaseStart: tenant.leaseStart.split("T")[0],
+      noticeGivenDate: tenant.noticeGivenDate ?? "",
       monthlyRent: tenant.monthlyRent, depositPaid: tenant.depositPaid,
       status: tenant.status as "active" | "inactive" | "pending",
       notes: tenant.notes ?? "",
@@ -182,24 +186,30 @@ export default function TenantDetail() {
   }
 
   const leaseStart = new Date(tenant.leaseStart);
-  const leaseEnd = new Date(tenant.leaseEnd);
   const today = new Date();
-  const leaseDays = differenceInDays(leaseEnd, leaseStart);
-  const daysElapsed = differenceInDays(today, leaseStart);
-  const daysRemaining = differenceInDays(leaseEnd, today);
-  const leaseProgressPct = Math.min(100, Math.max(0, (daysElapsed / leaseDays) * 100));
-  const leaseMonths = differenceInMonths(leaseEnd, leaseStart);
-  const leaseYears = differenceInYears(leaseEnd, leaseStart);
-  const leaseDuration = leaseYears >= 1
-    ? `${leaseYears} year${leaseYears > 1 ? "s" : ""}${leaseMonths % 12 > 0 ? ` ${leaseMonths % 12}mo` : ""}`
-    : `${leaseMonths} month${leaseMonths !== 1 ? "s" : ""}`;
+  const monthsIn = differenceInMonths(today, leaseStart);
+  const daysIn = differenceInDays(today, leaseStart);
 
-  const leaseExpired = isPast(leaseEnd);
-  const expiryWarning = !leaseExpired && daysRemaining <= 60;
+  const noticeDate = tenant.noticeGivenDate ? new Date(tenant.noticeGivenDate) : null;
+  const vacateDate = noticeDate ? addMonths(noticeDate, 2) : null;
+  const daysToVacate = vacateDate ? differenceInDays(vacateDate, today) : null;
+  const noticeActive = noticeDate != null;
 
   const paidCount = payments?.filter(p => p.status === "paid").length ?? 0;
   const totalPayments = payments?.length ?? 0;
   const paymentRate = totalPayments > 0 ? Math.round((paidCount / totalPayments) * 100) : null;
+
+  const kpi3Label = noticeActive
+    ? (daysToVacate != null && daysToVacate < 0 ? "Overdue Vacate" : "Days to Vacate")
+    : "Time Tenanted";
+  const kpi3Value = noticeActive
+    ? (daysToVacate != null ? (daysToVacate < 0 ? `${Math.abs(daysToVacate)}d overdue` : `${daysToVacate}d`) : "—")
+    : (monthsIn >= 12 ? `${Math.floor(monthsIn / 12)}yr ${monthsIn % 12}mo` : `${monthsIn}mo`);
+  const kpi3Sub = noticeActive && vacateDate
+    ? `Vacates ${format(vacateDate, "d MMM yyyy")}`
+    : `Started ${format(leaseStart, "d MMM yyyy")} · ${daysIn} days`;
+  const kpi3Accent = noticeActive ? (daysToVacate != null && daysToVacate <= 14 ? "rose" : "amber") : undefined;
+  const kpi3Icon = noticeActive ? Bell : RotateCcw;
 
   return (
     <AppLayout>
@@ -230,6 +240,16 @@ export default function TenantDetail() {
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-bold">{tenant.firstName} {tenant.lastName}</h1>
               <StatusBadge status={tenant.status} />
+              {!noticeActive && (
+                <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-xs gap-1">
+                  <RotateCcw className="h-3 w-3" />Rolling periodic
+                </Badge>
+              )}
+              {noticeActive && (
+                <Badge className="bg-amber-500/10 text-amber-700 border-amber-500/20 text-xs gap-1">
+                  <Bell className="h-3 w-3" />Notice given
+                </Badge>
+              )}
             </div>
             <p className="text-muted-foreground text-sm mt-0.5 flex items-center gap-1.5">
               <Building2 className="h-3.5 w-3.5" />
@@ -245,10 +265,11 @@ export default function TenantDetail() {
           <KpiCard label="Monthly Rent" value={fmt(tenant.monthlyRent)} sub={`${fmt(tenant.monthlyRent * 12)}/yr`} icon={PoundSterling} />
           <KpiCard label="Deposit Held" value={fmt(tenant.depositPaid)} sub={`${(tenant.depositPaid / tenant.monthlyRent).toFixed(1)} weeks' rent`} icon={Shield} />
           <KpiCard
-            label={leaseExpired ? "Lease Expired" : "Days Remaining"}
-            value={leaseExpired ? "Expired" : String(daysRemaining)}
-            sub={leaseExpired ? `Ended ${format(leaseEnd, "d MMM yyyy")}` : `Ends ${format(leaseEnd, "d MMM yyyy")}`}
-            icon={Calendar}
+            label={kpi3Label}
+            value={kpi3Value}
+            sub={kpi3Sub}
+            icon={kpi3Icon}
+            accent={kpi3Accent}
           />
           <KpiCard
             label="Payment Rate"
@@ -264,11 +285,11 @@ export default function TenantDetail() {
           {/* Left column */}
           <div className="lg:col-span-2 flex flex-col gap-6">
 
-            {/* Lease card */}
+            {/* Tenancy card */}
             <Card className="border-border/50 shadow-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />Lease Details
+                  <Calendar className="h-4 w-4 text-muted-foreground" />Tenancy Details
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -280,54 +301,76 @@ export default function TenantDetail() {
                     </button>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Lease Start</p>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Tenancy Start</p>
                     <p className="text-sm font-medium">{format(leaseStart, "d MMM yyyy")}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Lease End</p>
-                    <p className={`text-sm font-medium ${leaseExpired ? "text-rose-600" : expiryWarning ? "text-amber-600" : ""}`}>
-                      {format(leaseEnd, "d MMM yyyy")}
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Duration</p>
+                    <p className="text-sm font-medium">
+                      {monthsIn >= 12
+                        ? `${Math.floor(monthsIn / 12)} yr${Math.floor(monthsIn / 12) > 1 ? "s" : ""} ${monthsIn % 12 > 0 ? `${monthsIn % 12} mo` : ""}`
+                        : `${monthsIn} month${monthsIn !== 1 ? "s" : ""}`}
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Term</p>
-                    <p className="text-sm font-medium">{leaseDuration}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Tenancy Type</p>
-                    <p className="text-sm font-medium text-muted-foreground">AST</p>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Contract Type</p>
+                    <div className="flex items-center gap-1.5 text-sm font-medium text-emerald-700">
+                      <RotateCcw className="h-3.5 w-3.5" />Rolling periodic
+                    </div>
                   </div>
                   <div className="space-y-1">
                     <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Notice Period</p>
                     <p className="text-sm font-medium text-muted-foreground">2 months</p>
                   </div>
-                </div>
-
-                {/* Lease progress bar */}
-                <div>
-                  <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-                    <span>{format(leaseStart, "MMM yyyy")}</span>
-                    <span className={expiryWarning ? "text-amber-600 font-medium" : leaseExpired ? "text-rose-600 font-medium" : ""}>
-                      {leaseExpired ? "Expired" : `${daysRemaining} days left`}
-                    </span>
-                    <span>{format(leaseEnd, "MMM yyyy")}</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${leaseExpired ? "bg-rose-500" : expiryWarning ? "bg-amber-500" : "bg-primary"}`}
-                      style={{ width: `${leaseProgressPct}%` }}
-                    />
+                  <div className="space-y-1">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Notice Given</p>
+                    {noticeDate ? (
+                      <p className="text-sm font-medium text-amber-600">{format(noticeDate, "d MMM yyyy")}</p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">—</p>
+                    )}
                   </div>
                 </div>
 
-                {/* Expiry warning */}
-                {(leaseExpired || expiryWarning) && (
-                  <div className={`flex items-start gap-2 rounded-lg p-3 text-sm ${leaseExpired ? "bg-rose-500/10 text-rose-700" : "bg-amber-500/10 text-amber-700"}`}>
+                {/* Notice period bar — only shown when notice given */}
+                {noticeActive && noticeDate && vacateDate && (
+                  <div>
+                    <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                      <span>Notice given {format(noticeDate, "d MMM yyyy")}</span>
+                      <span className={`font-medium ${daysToVacate != null && daysToVacate <= 0 ? "text-rose-600" : "text-amber-600"}`}>
+                        {daysToVacate != null && daysToVacate <= 0 ? "Overdue" : `${daysToVacate}d remaining`}
+                      </span>
+                      <span>Vacates {format(vacateDate, "d MMM yyyy")}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${daysToVacate != null && daysToVacate <= 0 ? "bg-rose-500" : "bg-amber-500"}`}
+                        style={{ width: `${Math.min(100, Math.max(0, ((differenceInDays(today, noticeDate) / 60) * 100)))}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">2-month statutory notice period</p>
+                  </div>
+                )}
+
+                {/* Notice alert */}
+                {noticeActive && vacateDate && (
+                  <div className={`flex items-start gap-2 rounded-lg p-3 text-sm ${daysToVacate != null && daysToVacate <= 0 ? "bg-rose-500/10 text-rose-700" : "bg-amber-500/10 text-amber-700"}`}>
                     <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
                     <span>
-                      {leaseExpired
-                        ? "This lease has expired. A new agreement or Section 21/Section 8 notice may be required."
-                        : `Lease expires in ${daysRemaining} days. Consider initiating renewal discussions.`}
+                      {daysToVacate != null && daysToVacate <= 0
+                        ? `Tenant was due to vacate on ${format(vacateDate, "d MMM yyyy")}. Confirm departure and arrange end-of-tenancy inspection.`
+                        : `Tenant has given notice. Expected vacate date: ${format(vacateDate, "d MMM yyyy")} (${daysToVacate} days).`}
+                    </span>
+                  </div>
+                )}
+
+                {/* Rolling tenancy info — when no notice given */}
+                {!noticeActive && (
+                  <div className="flex items-start gap-2 rounded-lg p-3 text-sm bg-muted/50 text-muted-foreground">
+                    <RotateCcw className="h-4 w-4 shrink-0 mt-0.5 text-emerald-600" />
+                    <span>
+                      This is a rolling periodic tenancy under the Renters Reform Act. No fixed end date applies.
+                      The tenancy continues until either party gives 2 months' written notice.
                     </span>
                   </div>
                 )}
@@ -497,7 +540,7 @@ export default function TenantDetail() {
               </Card>
             )}
 
-            {/* Right-to-rent reminder */}
+            {/* Compliance checklist */}
             <Card className="border-border/50 shadow-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
@@ -533,7 +576,7 @@ export default function TenantDetail() {
             <DialogTitle>Edit Tenant</DialogTitle>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit((values) => updateMutation.mutate({ id: tenantId, data: values }))} className="space-y-6 pt-4">
+            <form onSubmit={form.handleSubmit((values) => updateMutation.mutate({ id: tenantId, data: { ...values, noticeGivenDate: values.noticeGivenDate || undefined } }))} className="space-y-6 pt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2 mb-2">
                   <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Personal Details</h4>
@@ -552,7 +595,8 @@ export default function TenantDetail() {
                 )} />
 
                 <div className="md:col-span-2 mt-4 mb-2">
-                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Lease Details</h4>
+                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Tenancy Details</h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">Rolling periodic tenancy — no fixed end date (Renters Reform Act)</p>
                   <div className="h-px w-full bg-border mt-2" />
                 </div>
 
@@ -585,10 +629,17 @@ export default function TenantDetail() {
                 )} />
 
                 <FormField control={form.control} name="leaseStart" render={({ field }) => (
-                  <FormItem><FormLabel>Lease Start</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Tenancy Start Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
-                <FormField control={form.control} name="leaseEnd" render={({ field }) => (
-                  <FormItem><FormLabel>Lease End</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                <FormField control={form.control} name="noticeGivenDate" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Notice Given Date
+                      <span className="ml-1.5 text-xs text-muted-foreground font-normal">(optional)</span>
+                    </FormLabel>
+                    <FormControl><Input type="date" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )} />
                 <FormField control={form.control} name="monthlyRent" render={({ field }) => (
                   <FormItem><FormLabel>Monthly Rent (£)</FormLabel><FormControl><Input type="number" min="0" {...field} /></FormControl><FormMessage /></FormItem>

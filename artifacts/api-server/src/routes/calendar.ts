@@ -41,8 +41,15 @@ router.get("/calendar/aggregate", async (_req, res) => {
 
     for (const t of tenants) {
       const name = `${t.firstName} ${t.lastName}`;
-      if (t.leaseStart) events.push({ id: `ls-${t.id}`, title: `${name} — Lease Start`, date: t.leaseStart, type: "lease_start", tenantId: t.id, tenantName: name, propertyId: t.propertyId });
-      if (t.leaseEnd) events.push({ id: `le-${t.id}`, title: `${name} — Lease End`, date: t.leaseEnd, type: "lease_end", tenantId: t.id, tenantName: name, propertyId: t.propertyId });
+      if (t.leaseStart) events.push({ id: `ls-${t.id}`, title: `${name} — Tenancy Start`, date: t.leaseStart, type: "lease_start", tenantId: t.id, tenantName: name, propertyId: t.propertyId });
+      if (t.noticeGivenDate) {
+        // Rolling tenancy: vacate date = notice given + 2 months
+        const noticeDate = new Date(t.noticeGivenDate);
+        const vacateDate = new Date(noticeDate);
+        vacateDate.setMonth(vacateDate.getMonth() + 2);
+        const vacateDateStr = vacateDate.toISOString().split("T")[0];
+        events.push({ id: `le-${t.id}`, title: `${name} — Vacate Date`, date: vacateDateStr, type: "lease_end", tenantId: t.id, tenantName: name, propertyId: t.propertyId, noticeGivenDate: t.noticeGivenDate });
+      }
     }
 
     for (const e of customEvents) {
