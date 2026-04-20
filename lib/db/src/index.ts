@@ -48,7 +48,7 @@ export const pool = new Pool({
   password,
   database,
   ssl,
-  max: 5,
+  max: 2,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
 });

@@ -116,10 +116,14 @@ type CashflowMonthRecord = {
 
 export default function Dashboard() {
   const { data: stats, isLoading } = useGetStats();
-  const { data: calEvents = [] } = useQuery<CalendarEvent[]>({
+  const { data: rawCalEvents } = useQuery<CalendarEvent[]>({
     queryKey: ["calendar-aggregate"],
-    queryFn: () => fetch(`${API_BASE}/api/calendar/aggregate`).then(r => r.json()),
+    queryFn: () => fetch(`${API_BASE}/api/calendar/aggregate`).then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    }),
   });
+  const calEvents: CalendarEvent[] = Array.isArray(rawCalEvents) ? rawCalEvents : [];
   const { data: rawCashflowMonths, refetch: refetchCashflow } = useQuery<CashflowMonthRecord[]>({
     queryKey: ["cashflow-months"],
     queryFn: () => fetch(`${API_BASE}/api/cashflow-months`).then(r => {

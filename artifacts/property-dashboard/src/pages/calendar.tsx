@@ -159,15 +159,23 @@ export default function CalendarPage() {
   const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
   const [defaultDate, setDefaultDate] = useState<string | null>(null);
 
-  const { data: events = [] } = useQuery<CalendarEvent[]>({
+  const { data: rawEvents } = useQuery<CalendarEvent[]>({
     queryKey: ["calendar-aggregate"],
-    queryFn: () => fetch(`${API_BASE}/api/calendar/aggregate`).then(r => r.json()),
+    queryFn: () => fetch(`${API_BASE}/api/calendar/aggregate`).then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    }),
   });
+  const events: CalendarEvent[] = Array.isArray(rawEvents) ? rawEvents : [];
 
-  const { data: properties = [] } = useQuery<{ id: number; address: string }[]>({
+  const { data: rawProperties } = useQuery<{ id: number; address: string }[]>({
     queryKey: ["properties-list"],
-    queryFn: () => fetch(`${API_BASE}/api/properties`).then(r => r.json()),
+    queryFn: () => fetch(`${API_BASE}/api/properties`).then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    }),
   });
+  const properties: { id: number; address: string }[] = Array.isArray(rawProperties) ? rawProperties : [];
 
   const createEvent = useMutation({
     mutationFn: (data: object) => fetch(`${API_BASE}/api/calendar-events`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json()),
